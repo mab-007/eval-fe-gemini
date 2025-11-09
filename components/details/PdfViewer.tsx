@@ -9,7 +9,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({ pdfUrl, pageNumber }) => {
     const finalUrl = pageNumber ? `${pdfUrl}#page=${pageNumber}` : pdfUrl;
     
     return (
-        <div className="bg-stone-100 rounded-2xl border border-stone-200 p-2 h-[calc(100vh-12rem)] overflow-hidden">
+        <div className="bg-stone-100 rounded-2xl border border-stone-200 p-2 h-[calc(200vh-12rem)] overflow-hidden">
             <iframe 
                 key={finalUrl} // Add key to force re-render on URL change
                 src={finalUrl}
