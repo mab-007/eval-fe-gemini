@@ -11,5 +11,13 @@ export interface Evaluation {
   subject: string;
 }
 
+export interface QuestionFeedback {
+  questionNumber: number;
+  score: number;
+  maxScore: number;
+  feedback: string;
+  isCorrect: boolean;
+}
+
 export type ViewMode = 'list' | 'grid';
 export type ActiveTab = 'study' | 'evaluate' | 'create';

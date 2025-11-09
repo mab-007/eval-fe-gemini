@@ -6,11 +6,12 @@ import { FileText, MoreHorizontal } from '../icons';
 
 interface EvaluationCardProps {
   item: Evaluation;
+  onCardClick: (id: number) => void;
 }
 
-const EvaluationCard: React.FC<EvaluationCardProps> = ({ item }) => {
+const EvaluationCard: React.FC<EvaluationCardProps> = ({ item, onCardClick }) => {
   return (
-    <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm hover:shadow-md transition-all group">
+    <div onClick={() => onCardClick(item.id)} className="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm hover:shadow-md transition-all group cursor-pointer">
       <div className="flex justify-between items-start mb-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-[#F0EBE6] flex items-center justify-center text-[#AB896A] group-hover:bg-[#AB896A] group-hover:text-white transition-colors">
@@ -21,7 +22,7 @@ const EvaluationCard: React.FC<EvaluationCardProps> = ({ item }) => {
             <p className="text-xs text-stone-500 font-medium">{item.subject}</p>
           </div>
         </div>
-        <button className="text-stone-400 hover:text-stone-700 p-1 hover:bg-stone-100 rounded-full transition-colors">
+        <button onClick={(e) => e.stopPropagation()} className="text-stone-400 hover:text-stone-700 p-1 hover:bg-stone-100 rounded-full transition-colors">
           <MoreHorizontal className="w-5 h-5" />
         </button>
       </div>

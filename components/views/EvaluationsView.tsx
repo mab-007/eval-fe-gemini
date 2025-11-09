@@ -12,9 +12,10 @@ import { FileText, BrainCircuit, Clock, Filter, List, LayoutGrid } from '../icon
 interface EvaluationsViewProps {
   hasData: boolean;
   onUploadClick: () => void;
+  onEvaluationSelect: (id: number) => void;
 }
 
-const EvaluationsView: React.FC<EvaluationsViewProps> = ({ hasData, onUploadClick }) => {
+const EvaluationsView: React.FC<EvaluationsViewProps> = ({ hasData, onUploadClick, onEvaluationSelect }) => {
   const [viewMode, setViewMode] = useState<ViewMode>('list');
 
   return (
@@ -56,14 +57,14 @@ const EvaluationsView: React.FC<EvaluationsViewProps> = ({ hasData, onUploadClic
                     <h3 className="font-semibold text-stone-800">Recent Submissions</h3>
                     <button className="text-sm text-[#AB896A] font-medium hover:underline">View all</button>
                 </div>
-                <EvaluationsTable evaluations={MOCK_EVALUATIONS} />
+                <EvaluationsTable evaluations={MOCK_EVALUATIONS} onRowClick={onEvaluationSelect} />
                 <Pagination currentCount={5} totalCount={142} />
              </div>
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {MOCK_EVALUATIONS.map((item) => (
-                  <EvaluationCard key={item.id} item={item} />
+                  <EvaluationCard key={item.id} item={item} onCardClick={onEvaluationSelect} />
                 ))}
               </div>
               <div className="pt-6 border-t border-stone-200/50 mt-6">

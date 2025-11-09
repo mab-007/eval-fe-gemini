@@ -6,9 +6,10 @@ import { FileText, MoreHorizontal } from '../icons';
 
 interface EvaluationsTableProps {
   evaluations: Evaluation[];
+  onRowClick: (id: number) => void;
 }
 
-const EvaluationsTable: React.FC<EvaluationsTableProps> = ({ evaluations }) => {
+const EvaluationsTable: React.FC<EvaluationsTableProps> = ({ evaluations, onRowClick }) => {
   return (
     <div className="overflow-x-auto">
       <table className="w-full">
@@ -24,7 +25,7 @@ const EvaluationsTable: React.FC<EvaluationsTableProps> = ({ evaluations }) => {
         </thead>
         <tbody className="divide-y divide-stone-100">
           {evaluations.map((item) => (
-            <tr key={item.id} className="hover:bg-[#FAF7F5] transition-colors group">
+            <tr key={item.id} onClick={() => onRowClick(item.id)} className="hover:bg-[#FAF7F5] transition-colors group cursor-pointer">
               <td className="px-6 py-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-[#F0EBE6] flex items-center justify-center text-[#AB896A]">
@@ -51,7 +52,7 @@ const EvaluationsTable: React.FC<EvaluationsTableProps> = ({ evaluations }) => {
                 )}
               </td>
               <td className="px-6 py-4 text-right">
-                <button className="p-2 hover:bg-stone-100 rounded-full text-stone-400 hover:text-stone-700 transition-colors">
+                <button onClick={(e) => e.stopPropagation()} className="p-2 hover:bg-stone-100 rounded-full text-stone-400 hover:text-stone-700 transition-colors">
                   <MoreHorizontal className="w-5 h-5" />
                 </button>
               </td>

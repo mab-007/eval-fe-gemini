@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, ChevronDown, UploadCloud, FileIcon } from '../icons';
+import { X, ChevronDown, UploadCloud, FileIcon, Plus } from '../icons';
 
 interface UploadModalProps {
   onClose: () => void;
@@ -10,7 +10,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose }) => {
   const [grade, setGrade] = useState('');
   const [section, setSection] = useState('');
   const [subject, setSubject] = useState('');
-  const [docType, setDocType] = useState('');
+  const [docType, setDocType] = useState('question_paper');
   const [noMarkingScheme, setNoMarkingScheme] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -39,10 +39,29 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose }) => {
   
   const isButtonDisabled = !grade || !section || !subject || !docType || !file || (docType === 'answer_sheet' && !noMarkingScheme);
 
-  let buttonText = 'Next';
-  if (file) {
-    buttonText = docType === 'answer_sheet' ? 'Finish' : 'Start Processing';
-  }
+  const resetForm = () => {
+    setFile(null);
+    setGrade('');
+    setSection('');
+    setSubject('');
+    setDocType('question_paper');
+    setNoMarkingScheme(false);
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    if (fileInput) fileInput.value = '';
+  };
+
+  const handleNext = () => {
+      // Mock submission logic for "Next"
+      console.log("Submitted. Resetting form for next upload.");
+      resetForm();
+  };
+
+  const handleFinish = (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      // Mock submission logic for "Finish"
+      console.log("Submitted. Closing modal.");
+      onClose();
+  };
 
 
   return (
@@ -60,7 +79,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose }) => {
             <p className="text-stone-500 mt-1">Enter details and attach your PDF.</p>
         </div>
 
-        <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); onClose(); }}>
+        <form className="space-y-5" onSubmit={handleFinish}>
            <div className="grid grid-cols-2 gap-4">
              <div>
                <label className="block text-sm font-medium text-stone-700 mb-1.5">Grade <span className="text-red-500">*</span></label>
@@ -132,14 +151,25 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose }) => {
               </div>
            )}
 
-           <button
-             type="submit"
-             disabled={isButtonDisabled}
-             className="w-full py-3.5 bg-[#AB896A] hover:bg-[#9a7b5f] text-white font-bold rounded-xl transition-all transform active:scale-[0.98] shadow-md hover:shadow-lg mt-4 flex items-center justify-center gap-2 disabled:bg-stone-300 disabled:shadow-none disabled:cursor-not-allowed"
-           >
-             <UploadCloud className="w-5 h-5" />
-             <span>{buttonText}</span>
-           </button>
+           <div className="flex items-center gap-3 pt-4">
+              <button
+                type="button"
+                onClick={handleNext}
+                disabled={isButtonDisabled}
+                className="w-full py-3.5 border border-stone-300 text-stone-700 font-bold rounded-xl transition-all transform active:scale-[0.98] hover:bg-stone-50 flex items-center justify-center gap-2 disabled:bg-stone-200 disabled:text-stone-400 disabled:border-stone-200 disabled:cursor-not-allowed"
+              >
+                <Plus className="w-5 h-5" />
+                <span>Next</span>
+              </button>
+              <button
+                type="submit"
+                disabled={isButtonDisabled}
+                className="w-full py-3.5 bg-[#AB896A] hover:bg-[#9a7b5f] text-white font-bold rounded-xl transition-all transform active:scale-[0.98] shadow-md hover:shadow-lg flex items-center justify-center gap-2 disabled:bg-stone-300 disabled:shadow-none disabled:cursor-not-allowed"
+              >
+                <UploadCloud className="w-5 h-5" />
+                <span>Finish</span>
+              </button>
+            </div>
         </form>
       </div>
     </div>
