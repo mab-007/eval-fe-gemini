@@ -1,0 +1,5 @@
+{
+  "name": "Dumbledore AI",
+  "description": "An AI-powered exam evaluation platform to manage and review AI-graded answer sheets, with features to upload documents and view evaluation statistics in different layouts.",
+  "requestFramePermissions": []
+}
