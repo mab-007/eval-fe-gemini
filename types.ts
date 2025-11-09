@@ -11,12 +11,20 @@ export interface Evaluation {
   subject: string;
 }
 
+export interface QuestionFeedbackStep {
+  description: string;
+  score: number;
+  maxScore: number;
+}
+
 export interface QuestionFeedback {
   questionNumber: number;
   score: number;
   maxScore: number;
   feedback: string;
   isCorrect: boolean;
+  steps?: QuestionFeedbackStep[];
+  pageNumber: number;
 }
 
 export type ViewMode = 'list' | 'grid';

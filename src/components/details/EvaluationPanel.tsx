@@ -8,9 +8,11 @@ import { Download, ThumbsDown, Check } from '../icons';
 interface EvaluationPanelProps {
     evaluation: Evaluation;
     details: QuestionFeedback[];
+    selectedQuestion: QuestionFeedback | null;
+    onQuestionSelect: (question: QuestionFeedback) => void;
 }
 
-const EvaluationPanel: React.FC<EvaluationPanelProps> = ({ evaluation, details }) => {
+const EvaluationPanel: React.FC<EvaluationPanelProps> = ({ evaluation, details, selectedQuestion, onQuestionSelect }) => {
     const totalScore = details.reduce((sum, q) => sum + q.score, 0);
     const maxScore = details.reduce((sum, q) => sum + q.maxScore, 0);
     const percentage = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
@@ -46,7 +48,14 @@ const EvaluationPanel: React.FC<EvaluationPanelProps> = ({ evaluation, details }
             <div className="max-h-[calc(100vh-32rem)] overflow-y-auto">
                 <div className="p-6 space-y-4">
                     <h4 className="text-sm font-semibold text-stone-600">Question Breakdown</h4>
-                    {details.map(q => <QuestionFeedbackCard key={q.questionNumber} feedback={q} />)}
+                    {details.map(q => 
+                        <QuestionFeedbackCard 
+                            key={q.questionNumber} 
+                            feedback={q}
+                            isSelected={selectedQuestion?.questionNumber === q.questionNumber}
+                            onSelect={() => onQuestionSelect(q)}
+                        />
+                    )}
                 </div>
             </div>
 
