@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import type { Evaluation, QuestionFeedback } from '../../types';
-import { MOCK_EVALUATION_DETAIL } from '../../constants';
+import { DETAILED_EVALUATION_DATA, MOCK_DETAILED_QUESTIONS } from '../../constants';
 import { ArrowLeft } from '../icons';
 import PdfViewer from '../details/PdfViewer';
 import EvaluationPanel from '../details/EvaluationPanel';
@@ -13,6 +12,19 @@ interface EvaluationDetailViewProps {
 
 const EvaluationDetailView: React.FC<EvaluationDetailViewProps> = ({ evaluation, onBack }) => {
   const [selectedQuestion, setSelectedQuestion] = useState<QuestionFeedback | null>(null);
+  const [details, setDetails] = useState<QuestionFeedback[]>(MOCK_DETAILED_QUESTIONS);
+
+  const handleDetailsUpdate = (updatedQuestion: QuestionFeedback) => {
+    setDetails(prevDetails =>
+      prevDetails.map(q =>
+        q.questionNumber === updatedQuestion.questionNumber ? updatedQuestion : q
+      )
+    );
+    // Also update the selected question if it's the one being edited
+    if (selectedQuestion?.questionNumber === updatedQuestion.questionNumber) {
+        setSelectedQuestion(updatedQuestion);
+    }
+  };
 
   const handleQuestionSelect = (question: QuestionFeedback) => {
     // If the same question is clicked again, deselect it. Otherwise, select the new one.
@@ -35,7 +47,9 @@ const EvaluationDetailView: React.FC<EvaluationDetailViewProps> = ({ evaluation,
         <div className="lg:col-span-1">
             <EvaluationPanel 
               evaluation={evaluation} 
-              details={MOCK_EVALUATION_DETAIL}
+              evaluationReport={DETAILED_EVALUATION_DATA.evaluation_report}
+              details={details}
+              onDetailsUpdate={handleDetailsUpdate}
               selectedQuestion={selectedQuestion}
               onQuestionSelect={handleQuestionSelect}
             />

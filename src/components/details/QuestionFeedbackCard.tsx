@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import type { QuestionFeedback, QuestionFeedbackStep, AiConfidence } from '../../types';
-import { CheckCircle2, XCircle, UserCheck, MessageSquare, ThumbsUp, ThumbsDown } from '../icons';
+import type { QuestionFeedback, AiConfidence, Mistake } from '../../types';
+import { CheckCircle2, XCircle, UserCheck, MessageSquare, ThumbsUp, ThumbsDown, ChevronDown } from '../icons';
 
 interface QuestionFeedbackCardProps {
     feedback: QuestionFeedback;
@@ -11,45 +11,44 @@ interface QuestionFeedbackCardProps {
 }
 
 const AiConfidenceBadge: React.FC<{ confidence: AiConfidence }> = ({ confidence }) => {
-    const confidenceStyles = {
+    const formattedConfidence = confidence.charAt(0).toUpperCase() + confidence.slice(1);
+    const confidenceStyles: Record<string, string> = {
         High: 'bg-emerald-100 text-emerald-700',
         Medium: 'bg-amber-100 text-amber-700',
         Low: 'bg-red-100 text-red-700',
     };
     return (
-        <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${confidenceStyles[confidence]}`}>
-            {confidence} Confidence
+        <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${confidenceStyles[formattedConfidence]}`}>
+            {formattedConfidence} Confidence
         </span>
     );
 };
+
+const DetailSection: React.FC<{ title: string; children: React.ReactNode; notFound?: boolean }> = ({ title, children, notFound }) => (
+    <div>
+        <h6 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-1">{title}</h6>
+        {notFound ? (
+            <p className="text-sm text-stone-400 italic">Not attempted by student.</p>
+        ) : (
+            <div className="text-sm text-stone-700 space-y-1">{children}</div>
+        )}
+    </div>
+);
+
 
 const QuestionFeedbackCard: React.FC<QuestionFeedbackCardProps> = ({ feedback, isSelected, onSelect, onUpdate }) => {
     const [isEditing, setIsEditing] = useState(false);
     
     const [editedScore, setEditedScore] = useState(feedback.score);
     const [editedComment, setEditedComment] = useState(feedback.studentComment || '');
-    const [editedSteps, setEditedSteps] = useState<QuestionFeedbackStep[]>(JSON.parse(JSON.stringify(feedback.steps || [])));
-
+    
     useEffect(() => {
         if (!isEditing) {
             setEditedScore(feedback.score);
-            setEditedSteps(JSON.parse(JSON.stringify(feedback.steps || [])));
             setEditedComment(feedback.studentComment || '');
         }
     }, [isEditing, feedback]);
 
-    const handleStepScoreChange = (index: number, newScore: number) => {
-        const newSteps = [...editedSteps];
-        const clampedScore = Math.max(0, Math.min(newScore, newSteps[index].maxScore));
-        
-        if (!isNaN(clampedScore)) {
-            newSteps[index] = { ...newSteps[index], score: clampedScore };
-            setEditedSteps(newSteps);
-            const newTotal = newSteps.reduce((sum, step) => sum + step.score, 0);
-            setEditedScore(newTotal);
-        }
-    };
-    
     const handleTotalScoreChange = (newScore: number) => {
         const clampedScore = Math.max(0, Math.min(newScore, feedback.maxScore));
         if (!isNaN(clampedScore)) {
@@ -61,7 +60,6 @@ const QuestionFeedbackCard: React.FC<QuestionFeedbackCardProps> = ({ feedback, i
         onUpdate({
             ...feedback,
             score: editedScore,
-            steps: editedSteps,
             isCorrect: editedScore === feedback.maxScore,
             studentComment: editedComment,
             isEdited: true,
@@ -75,13 +73,15 @@ const QuestionFeedbackCard: React.FC<QuestionFeedbackCardProps> = ({ feedback, i
 
     const handleToggleEdit = (e: React.MouseEvent) => {
         e.stopPropagation(); 
-        setIsEditing(!isEditing);
+        setIsEditing(true);
     };
     
     const handleCardClick = () => {
         if (isEditing) return;
         onSelect();
     }
+    
+    const isSkipped = feedback.studentAnswer === "not found" || feedback.studentAnswer === "X";
 
     return (
         <div 
@@ -98,36 +98,60 @@ const QuestionFeedbackCard: React.FC<QuestionFeedbackCardProps> = ({ feedback, i
                 <div className="flex items-center gap-2">
                     {feedback.isCorrect ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <XCircle className="w-4 h-4 text-red-500" />}
                     <h5 className="font-bold text-sm text-stone-800">Question {feedback.questionNumber}</h5>
-                    {/* FIX: The 'title' prop is not supported on lucide-react icons directly. Wrap with a span to show a tooltip. */}
                     {feedback.isEdited && <span title="Human verified"><UserCheck className="w-4 h-4 text-emerald-600" /></span>}
                 </div>
-                <button onClick={handleToggleEdit} className="font-bold text-sm text-stone-900 bg-stone-100 hover:bg-stone-200 px-2 py-0.5 rounded-md transition-colors">
+                <div className="font-bold text-sm text-stone-900 bg-stone-100 px-2 py-0.5 rounded-md">
                     {feedback.score} / {feedback.maxScore}
-                </button>
+                </div>
             </div>
+
             <div className="pl-6">
                 <p className="text-sm text-stone-600 mb-3">{feedback.feedback}</p>
-                <AiConfidenceBadge confidence={feedback.aiConfidence} />
+                <div className="flex items-center justify-between">
+                    <AiConfidenceBadge confidence={feedback.aiConfidence} />
+                     {!isSelected && <ChevronDown className="w-4 h-4 text-stone-400" />}
+                </div>
             </div>
             
+            {/* --- EXPANDED DETAILS --- */}
+            {isSelected && !isEditing && (
+                <div className="pt-4 mt-4 border-t border-stone-200/70 space-y-4 animate-in" onClick={e => e.stopPropagation()}>
+                    <DetailSection title="Question Summary"><p>{feedback.questionSummary}</p></DetailSection>
+                    <DetailSection title="Student's Answer" notFound={isSkipped}><p className="whitespace-pre-wrap font-mono text-xs bg-stone-100 p-2 rounded">{feedback.studentAnswer}</p></DetailSection>
+                    <DetailSection title="Ideal Approach"><p>{feedback.idealApproach}</p></DetailSection>
+                    
+                    {feedback.mistakesMade.length > 0 && (
+                        <DetailSection title="Mistakes Identified">
+                            <ul className="list-disc pl-5 space-y-1">
+                                {feedback.mistakesMade.map((mistake, index) => (
+                                    <li key={index} className="text-red-700/80">
+                                        {mistake.mistake_description} <span className="font-semibold">({mistake.marks_lost} marks lost)</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </DetailSection>
+                    )}
+
+                    <div className="pt-2 flex justify-end">
+                         <button onClick={handleToggleEdit} className="text-sm font-medium text-[#AB896A] hover:underline">Override Score & Add Comment</button>
+                    </div>
+                </div>
+            )}
+
+
+            {/* --- EDITING UI --- */}
             {isEditing && (
                 <div className="bg-stone-50 rounded-lg border border-stone-200/80 p-4 mt-4 space-y-4 animate-in cursor-auto" onClick={e => e.stopPropagation()}>
-                    <div>
-                        <h6 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-1">Marking Scheme</h6>
-                        <p className="text-sm text-stone-700 italic">{feedback.markingScheme}</p>
-                    </div>
+                    <DetailSection title="Marking Scheme"><p className="italic">{feedback.markingScheme}</p></DetailSection>
                     
                     <div className="space-y-3 pt-3 border-t border-stone-200">
                         <h6 className="text-xs font-bold text-stone-500 uppercase tracking-wider">Score Override</h6>
-                        {editedSteps.map((step, index) => (
-                            <div key={index} className="flex items-center justify-between gap-4">
-                                <label htmlFor={`step-${index}`} className="text-sm text-stone-600 flex-1 truncate">{step.description}</label>
-                                <div className="flex items-center gap-2"><input type="number" id={`step-${index}`} value={step.score} onChange={(e) => handleStepScoreChange(index, parseInt(e.target.value))} className="w-16 p-1 text-center bg-white border border-stone-200 rounded-md focus:outline-none focus:ring-1 focus:ring-[#AB896A]" min="0" max={step.maxScore} /><span className="text-sm text-stone-400">/ {step.maxScore}</span></div>
-                            </div>
-                        ))}
-                         <div className="flex items-center justify-between pt-2 border-t border-stone-200/70">
+                         <div className="flex items-center justify-between">
                             <label htmlFor="total-score" className="text-sm font-bold text-stone-800">Total Score</label>
-                            <div className="flex items-center gap-2"><input type="number" id="total-score" value={editedScore} onChange={(e) => handleTotalScoreChange(parseInt(e.target.value))} className="w-16 p-1 text-center bg-white border border-stone-300 rounded-md font-bold focus:outline-none focus:ring-1 focus:ring-[#AB896A]" min="0" max={feedback.maxScore} /><span className="text-sm font-bold text-stone-500">/ {feedback.maxScore}</span></div>
+                            <div className="flex items-center gap-2">
+                                <input type="number" step="0.5" id="total-score" value={editedScore} onChange={(e) => handleTotalScoreChange(parseFloat(e.target.value))} className="w-20 p-1.5 text-center bg-white border border-stone-300 rounded-md font-bold focus:outline-none focus:ring-1 focus:ring-[#AB896A]" min="0" max={feedback.maxScore} />
+                                <span className="text-sm font-bold text-stone-500">/ {feedback.maxScore}</span>
+                            </div>
                         </div>
                     </div>
 

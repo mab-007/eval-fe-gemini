@@ -10,36 +10,18 @@ Dumbledore AI is a modern, AI-powered web application designed for educators to 
 - **Flexible Views:** View evaluations in either a detailed list or a visual grid layout.
 - **Detailed Analysis:** Dive into a specific evaluation to see the answer sheet PDF side-by-side with a question-by-question breakdown of AI feedback.
 - **Responsive Design:** A fully responsive UI that works seamlessly on different screen sizes.
-- **Modern Tech Stack:** Built with React, TypeScript, and Tailwind CSS, powered by Vite.
+- **Zero Installation:** Runs directly in the browser using CDN-hosted libraries, with no build step required.
 
 ## 🚀 Getting Started
 
-This project is set up to run in a local development environment using Vite.
+This project is a zero-configuration application that runs directly in your web browser without needing a local development server or any installation steps.
 
-### Prerequisites
+### How to Run
 
-- [Node.js](https://nodejs.org/) (version 18.x or later recommended)
-- [npm](https://www.npmjs.com/) (usually comes with Node.js)
+1.  Make sure all the project files are in the same directory structure.
+2.  Open the `index.html` file in a modern web browser that supports ES modules (like Chrome, Firefox, Safari, or Edge).
 
-### Installation & Setup
-
-1.  **Clone the repository (if you haven't already).**
-
-2.  **Install dependencies:**
-    Run the following command in the project's root directory:
-    ```bash
-    npm install
-    ```
-
-3.  **Add a sample PDF:**
-    Create a `public` directory in the root of the project. Place a sample PDF file inside it and name it `sample.pdf`. This file will be used for the PDF viewer in the evaluation detail view.
-
-4.  **Run the development server:**
-    Once the dependencies are installed, you can start the development server:
-    ```bash
-    npm run dev
-    ```
-    This will start the Vite development server, typically on `http://localhost:5173`. Open this URL in your browser to see the application.
+That's it! The application will load all necessary libraries (React, Tailwind CSS) from a CDN and run.
 
 ## 📂 Project Structure
 
@@ -47,13 +29,11 @@ The project is organized into the following main directories:
 
 ```
 /
-├── public/           # Static assets (e.g., sample.pdf)
 ├── src/              # All application source code
 │   ├── components/   # Reusable UI components
 │   ├── constants.ts  # Mock data
 │   ├── types.ts      # TypeScript type definitions
 │   ├── App.tsx       # Main application component
 │   └── index.tsx     # Application entry point
-├── package.json      # Project dependencies and scripts
-└── vite.config.ts    # Vite configuration
+└── index.html        # Main HTML file
 ```

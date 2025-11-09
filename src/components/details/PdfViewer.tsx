@@ -5,9 +5,7 @@ interface PdfViewerProps {
 }
 
 const PdfViewer: React.FC<PdfViewerProps> = ({ pageNumber }) => {
-    // This component loads a sample PDF from the `public` directory.
-    // Make sure you have a `sample.pdf` file in a `public` folder at the project root.
-    const pdfUrl = "/sample.pdf";
+    const pdfUrl = "https://unec.edu.az/application/uploads/2014/12/pdf-sample.pdf";
     const finalUrl = pageNumber ? `${pdfUrl}#page=${pageNumber}` : pdfUrl;
     
     return (

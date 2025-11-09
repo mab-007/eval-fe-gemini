@@ -7,20 +7,26 @@ import { Download, ThumbsDown, Check, UserCheck } from '../icons';
 
 interface EvaluationPanelProps {
     evaluation: Evaluation;
+    evaluationReport: {
+        overall_score: number;
+        total_possible_score: number;
+        overall_feedback: string;
+    };
     details: QuestionFeedback[];
     selectedQuestion: QuestionFeedback | null;
+    // FIX: Corrected typo from Questionfeedback to QuestionFeedback
     onQuestionSelect: (question: QuestionFeedback) => void;
     onDetailsUpdate: (question: QuestionFeedback) => void;
 }
 
 type FilterType = 'all' | 'review' | 'help';
 
-const EvaluationPanel: React.FC<EvaluationPanelProps> = ({ evaluation, details, selectedQuestion, onQuestionSelect, onDetailsUpdate }) => {
+const EvaluationPanel: React.FC<EvaluationPanelProps> = ({ evaluation, evaluationReport, details, selectedQuestion, onQuestionSelect, onDetailsUpdate }) => {
     const [activeFilter, setActiveFilter] = useState<FilterType>('all');
     
-    const totalScore = details.reduce((sum, q) => sum + q.score, 0);
-    const maxScore = details.reduce((sum, q) => sum + q.maxScore, 0);
-    const percentage = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
+    const percentage = evaluationReport.total_possible_score > 0 
+        ? Math.round((evaluationReport.overall_score / evaluationReport.total_possible_score) * 100) 
+        : 0;
     
     const getScoreColor = (p: number) => {
         if (p >= 90) return 'text-emerald-600 bg-emerald-100 border-emerald-200';
@@ -30,10 +36,10 @@ const EvaluationPanel: React.FC<EvaluationPanelProps> = ({ evaluation, details, 
 
     const filteredDetails = details.filter(q => {
         if (activeFilter === 'review') {
-            return q.aiConfidence === 'Low' || q.aiConfidence === 'Medium';
+            return q.aiConfidence === 'Low' || q.aiConfidence === 'Medium' || q.aiConfidence === 'low' || q.aiConfidence === 'medium';
         }
         if (activeFilter === 'help') {
-            return (q.score / q.maxScore) * 100 < 30;
+            return q.maxScore > 0 && (q.score / q.maxScore) * 100 < 30;
         }
         return true; // 'all'
     });
@@ -70,6 +76,11 @@ const EvaluationPanel: React.FC<EvaluationPanelProps> = ({ evaluation, details, 
                 </div>
             </div>
             
+            <div className="p-6 space-y-3 bg-[#F9F6F3]/50 border-b border-stone-100">
+                 <h4 className="text-sm font-semibold text-stone-600">AI Feedback Summary</h4>
+                 <p className="text-sm text-stone-700 whitespace-pre-wrap">{evaluationReport.overall_feedback}</p>
+            </div>
+
             <div className="p-6 border-b border-stone-100">
                  <h4 className="text-sm font-semibold text-stone-600 mb-3">Action Center Filters</h4>
                  <div className="flex items-center gap-2">
@@ -79,7 +90,7 @@ const EvaluationPanel: React.FC<EvaluationPanelProps> = ({ evaluation, details, 
                  </div>
             </div>
 
-            <div className="max-h-[calc(100vh-36rem)] overflow-y-auto bg-[#F9F6F3]/50">
+            <div className="max-h-[calc(100vh-42rem)] overflow-y-auto bg-[#F9F6F3]/50">
                 <div className="p-6 space-y-4">
                     <div className="flex justify-between items-center">
                         <h4 className="text-sm font-semibold text-stone-600">Question Breakdown</h4>

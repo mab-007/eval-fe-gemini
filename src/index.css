@@ -1,3 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/*
+  This file is not used in the CDN-based setup.
+  All styling is handled by the Tailwind CSS script in index.html.
+*/

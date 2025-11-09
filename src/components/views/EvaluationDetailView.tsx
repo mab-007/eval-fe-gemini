@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import type { Evaluation, QuestionFeedback } from '../../types';
-import { MOCK_EVALUATION_DETAIL } from '../../constants';
+import { DETAILED_EVALUATION_DATA, MOCK_DETAILED_QUESTIONS } from '../../constants';
 import { ArrowLeft } from '../icons';
 import PdfViewer from '../details/PdfViewer';
 import EvaluationPanel from '../details/EvaluationPanel';
@@ -13,7 +13,7 @@ interface EvaluationDetailViewProps {
 
 const EvaluationDetailView: React.FC<EvaluationDetailViewProps> = ({ evaluation, onBack }) => {
   const [selectedQuestion, setSelectedQuestion] = useState<QuestionFeedback | null>(null);
-  const [details, setDetails] = useState<QuestionFeedback[]>(MOCK_EVALUATION_DETAIL);
+  const [details, setDetails] = useState<QuestionFeedback[]>(MOCK_DETAILED_QUESTIONS);
 
   const handleDetailsUpdate = (updatedQuestion: QuestionFeedback) => {
     setDetails(prevDetails =>
@@ -48,6 +48,7 @@ const EvaluationDetailView: React.FC<EvaluationDetailViewProps> = ({ evaluation,
         <div className="lg:col-span-1">
             <EvaluationPanel 
               evaluation={evaluation} 
+              evaluationReport={DETAILED_EVALUATION_DATA.evaluation_report}
               details={details}
               onDetailsUpdate={handleDetailsUpdate}
               selectedQuestion={selectedQuestion}
