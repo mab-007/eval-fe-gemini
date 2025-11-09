@@ -1,11 +1,11 @@
 import React from 'react';
 
 interface PdfViewerProps {
+    pdfUrl: string;
     pageNumber?: number;
 }
 
-const PdfViewer: React.FC<PdfViewerProps> = ({ pageNumber }) => {
-    const pdfUrl = "https://unec.edu.az/application/uploads/2014/12/pdf-sample.pdf";
+const PdfViewer: React.FC<PdfViewerProps> = ({ pdfUrl, pageNumber }) => {
     const finalUrl = pageNumber ? `${pdfUrl}#page=${pageNumber}` : pdfUrl;
     
     return (

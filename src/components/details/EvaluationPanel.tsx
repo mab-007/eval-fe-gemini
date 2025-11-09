@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import type { Evaluation, QuestionFeedback } from '../../types';
 import StatusBadge from '../ui/StatusBadge';
@@ -14,7 +13,6 @@ interface EvaluationPanelProps {
     };
     details: QuestionFeedback[];
     selectedQuestion: QuestionFeedback | null;
-    // FIX: Corrected typo from Questionfeedback to QuestionFeedback
     onQuestionSelect: (question: QuestionFeedback) => void;
     onDetailsUpdate: (question: QuestionFeedback) => void;
 }
@@ -103,9 +101,9 @@ const EvaluationPanel: React.FC<EvaluationPanelProps> = ({ evaluation, evaluatio
                     </div>
                     {filteredDetails.map(q => 
                         <QuestionFeedbackCard 
-                            key={q.questionNumber} 
+                            key={`${q.questionNumber}-${q.componentId || ''}`} 
                             feedback={q}
-                            isSelected={selectedQuestion?.questionNumber === q.questionNumber}
+                            isSelected={selectedQuestion?.questionNumber === q.questionNumber && selectedQuestion?.componentId === q.componentId}
                             onSelect={() => onQuestionSelect(q)}
                             onUpdate={onDetailsUpdate}
                         />

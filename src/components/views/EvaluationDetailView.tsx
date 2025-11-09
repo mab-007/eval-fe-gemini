@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import type { Evaluation, QuestionFeedback } from '../../types';
 import { DETAILED_EVALUATION_DATA, MOCK_DETAILED_QUESTIONS } from '../../constants';
@@ -18,18 +17,24 @@ const EvaluationDetailView: React.FC<EvaluationDetailViewProps> = ({ evaluation,
   const handleDetailsUpdate = (updatedQuestion: QuestionFeedback) => {
     setDetails(prevDetails =>
       prevDetails.map(q =>
-        q.questionNumber === updatedQuestion.questionNumber ? updatedQuestion : q
+        (q.questionNumber === updatedQuestion.questionNumber && q.componentId === updatedQuestion.componentId) 
+          ? updatedQuestion 
+          : q
       )
     );
     // Also update the selected question if it's the one being edited
-    if (selectedQuestion?.questionNumber === updatedQuestion.questionNumber) {
+    if (selectedQuestion?.questionNumber === updatedQuestion.questionNumber && selectedQuestion?.componentId === updatedQuestion.componentId) {
         setSelectedQuestion(updatedQuestion);
     }
   };
 
   const handleQuestionSelect = (question: QuestionFeedback) => {
     // If the same question is clicked again, deselect it. Otherwise, select the new one.
-    setSelectedQuestion(prev => (prev?.questionNumber === question.questionNumber ? null : question));
+    setSelectedQuestion(prev => 
+      (prev?.questionNumber === question.questionNumber && prev?.componentId === question.componentId)
+        ? null 
+        : question
+    );
   };
 
   return (
@@ -43,7 +48,10 @@ const EvaluationDetailView: React.FC<EvaluationDetailViewProps> = ({ evaluation,
 
       <div className="grid grid-cols-1 lg:grid-cols-3 lg:gap-8 space-y-8 lg:space-y-0">
         <div className="lg:col-span-2">
-            <PdfViewer pageNumber={selectedQuestion?.pageNumber} />
+            <PdfViewer 
+              pdfUrl={DETAILED_EVALUATION_DATA.download_url} 
+              pageNumber={selectedQuestion?.pageNumber} 
+            />
         </div>
         <div className="lg:col-span-1">
             <EvaluationPanel 

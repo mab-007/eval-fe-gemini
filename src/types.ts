@@ -47,15 +47,34 @@ export interface QuestionFeedback {
 export type ViewMode = 'list' | 'grid';
 export type ActiveTab = 'study' | 'evaluate' | 'create';
 
-// Type for the detailed evaluation report JSON object
-export interface DetailedEvaluationReport {
+// Type for the detailed evaluation API response
+export interface ApiEvaluationResponse {
   id: string;
+  owner_id: string;
+  exam_template_id: string | null;
+  student_name: string | null;
   evaluation_report: {
     overall_score: number;
     total_possible_score: number;
     overall_feedback: string;
-    // FIX: Added `predicted_grade` property to align type with mock data.
     predicted_grade: string | null;
-    questions: any[]; // Using any to avoid defining the full complex type for every sub-field
-  }
+    questions: any[];
+    typology_performance: Record<string, any>;
+    concept_performance: Record<string, any>;
+    question_type_performance: Record<string, any>;
+    mistake_type_performance: Record<string, any>;
+    chapter_performance: Record<string, any>;
+    chapter_mistake_mapping: Record<string, any>;
+    question_summaries: any[];
+    manual_annotations: any[];
+  };
+  processing_status: string;
+  created_at: string;
+  original_filename: string;
+  download_url: string;
+  metadata: {
+    class_level: string;
+    subject: string;
+    year: string;
+  };
 }
