@@ -16,14 +16,20 @@ export interface QuestionFeedbackStep {
   maxScore: number;
 }
 
+export type AiConfidence = 'High' | 'Medium' | 'Low';
+
 export interface QuestionFeedback {
   questionNumber: number;
   score: number;
   maxScore: number;
-  feedback: string;
+  feedback: string; // This is the AI's rationale
   isCorrect: boolean;
   steps?: QuestionFeedbackStep[];
   pageNumber: number;
+  aiConfidence: AiConfidence;
+  markingScheme: string;
+  studentComment?: string;
+  isEdited?: boolean;
 }
 
 export type ViewMode = 'list' | 'grid';

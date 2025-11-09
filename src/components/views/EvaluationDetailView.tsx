@@ -13,6 +13,19 @@ interface EvaluationDetailViewProps {
 
 const EvaluationDetailView: React.FC<EvaluationDetailViewProps> = ({ evaluation, onBack }) => {
   const [selectedQuestion, setSelectedQuestion] = useState<QuestionFeedback | null>(null);
+  const [details, setDetails] = useState<QuestionFeedback[]>(MOCK_EVALUATION_DETAIL);
+
+  const handleDetailsUpdate = (updatedQuestion: QuestionFeedback) => {
+    setDetails(prevDetails =>
+      prevDetails.map(q =>
+        q.questionNumber === updatedQuestion.questionNumber ? updatedQuestion : q
+      )
+    );
+    // Also update the selected question if it's the one being edited
+    if (selectedQuestion?.questionNumber === updatedQuestion.questionNumber) {
+        setSelectedQuestion(updatedQuestion);
+    }
+  };
 
   const handleQuestionSelect = (question: QuestionFeedback) => {
     // If the same question is clicked again, deselect it. Otherwise, select the new one.
@@ -35,7 +48,8 @@ const EvaluationDetailView: React.FC<EvaluationDetailViewProps> = ({ evaluation,
         <div className="lg:col-span-1">
             <EvaluationPanel 
               evaluation={evaluation} 
-              details={MOCK_EVALUATION_DETAIL}
+              details={details}
+              onDetailsUpdate={handleDetailsUpdate}
               selectedQuestion={selectedQuestion}
               onQuestionSelect={handleQuestionSelect}
             />

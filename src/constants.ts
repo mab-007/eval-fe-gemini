@@ -3,7 +3,7 @@ import type { Evaluation, QuestionFeedback } from './types';
 
 export const MOCK_EVALUATIONS: Evaluation[] = [
   { id: 1, title: 'Mid-Term Physics Test', student: 'Harry Potter', date: '2024-11-09', status: 'Graded', score: 92, subject: 'Physics' },
-  { id: 2, title: 'History Essay - Goblins', student: 'Ron Weasley', date: '2024-11-09', status: 'Needs Review', score: null, subject: 'History' },
+  { id: 2, title: 'History Essay - Goblins', student: 'Ron Weasley', date: '2024-11-09', status: 'Needs Review', score: 72, subject: 'History' },
   { id: 3, title: 'Potions Final Exam', student: 'Hermione Granger', date: '2024-11-08', status: 'Graded', score: 100, subject: 'Potions' },
   { id: 4, title: 'Transfiguration Quiz', student: 'Neville Longbottom', date: '2024-11-08', status: 'Processing', score: null, subject: 'Transfiguration' },
   { id: 5, title: 'Defense Against Dark Arts', student: 'Draco Malfoy', date: '2024-11-07', status: 'Graded', score: 85, subject: 'DADA' },
@@ -21,6 +21,8 @@ export const MOCK_EVALUATION_DETAIL: QuestionFeedback[] = [
       { description: 'Mentioned key dates correctly', score: 2, maxScore: 5 },
     ],
     pageNumber: 1,
+    aiConfidence: 'High',
+    markingScheme: 'Award 5 marks for naming rebellions, 5 for correct dates.',
   },
   {
     questionNumber: 2,
@@ -33,6 +35,8 @@ export const MOCK_EVALUATION_DETAIL: QuestionFeedback[] = [
       { description: 'Supporting evidence', score: 5, maxScore: 5 },
     ],
     pageNumber: 1,
+    aiConfidence: 'High',
+    markingScheme: 'Assess clarity and evidence equally. Full marks for well-supported arguments.',
   },
   {
     questionNumber: 3,
@@ -45,6 +49,8 @@ export const MOCK_EVALUATION_DETAIL: QuestionFeedback[] = [
       { description: 'Chronological order', score: 2, maxScore: 5 },
     ],
     pageNumber: 2,
+    aiConfidence: 'Medium',
+    markingScheme: '5 marks for accuracy, 5 for chronology. Deduct for mixing up timelines.',
   },
   {
     questionNumber: 4,
@@ -57,6 +63,8 @@ export const MOCK_EVALUATION_DETAIL: QuestionFeedback[] = [
         { description: 'Explained motivations', score: 3, maxScore: 5 },
     ],
     pageNumber: 2,
+    aiConfidence: 'High',
+    markingScheme: 'Full marks for identifying role; partial for explaining motivations.',
   },
   {
     questionNumber: 5,
@@ -69,6 +77,8 @@ export const MOCK_EVALUATION_DETAIL: QuestionFeedback[] = [
       { description: 'Recalled Clause 3', score: 3, maxScore: 3 },
     ],
     pageNumber: 3,
+    aiConfidence: 'High',
+    markingScheme: 'Marks as specified for each clause recalled.',
   },
   {
     questionNumber: 6,
@@ -80,5 +90,9 @@ export const MOCK_EVALUATION_DETAIL: QuestionFeedback[] = [
       { description: 'Relevance to question', score: 0, maxScore: 5 },
     ],
     pageNumber: 3,
+    aiConfidence: 'Low',
+    markingScheme: 'Award marks only for answers relevant to goblin metallurgy.',
+    studentComment: 'Please review the chapter on goblin metallurgy. The question was not about wizarding smiths.',
+    isEdited: true,
   },
 ];

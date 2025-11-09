@@ -19,6 +19,9 @@ export {
   ArrowLeft,
   Check,
   ThumbsDown,
+  ThumbsUp,
   Download,
-  XCircle
+  XCircle,
+  UserCheck,
+  MessageSquare,
 } from 'lucide-react';
