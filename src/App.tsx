@@ -98,6 +98,7 @@ const App: React.FC = () => {
               description={selectedSubmission.description}
               submissionId={selectedSubmission.id}
               status={selectedSubmission.status}
+              totalMarksAvailable={selectedSubmission.total_marks}
               onBack={handleBackToList}
               onNavigateToPrevious={hasPrevious ? handleNavigateToPrevious : undefined}
               onNavigateToNext={hasNext ? handleNavigateToNext : undefined}

@@ -49,6 +49,7 @@ interface AnswerSheetViewProps {
   description?: string;
   submissionId?: number;
   status?: string;
+  totalMarksAvailable?: number;
   onBack: () => void;
   onNavigateToPrevious?: () => void;
   onNavigateToNext?: () => void;
@@ -63,6 +64,7 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
   description,
   submissionId,
   status,
+  totalMarksAvailable: totalMarksFromBackend,
   onBack,
   onNavigateToPrevious,
   onNavigateToNext
@@ -89,7 +91,8 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
   const verifiedQuestions = questions.filter(q => q.is_verified);
   const verifiedQuestionsCount = verifiedQuestions.length;
   const totalScore = verifiedQuestions.reduce((sum, q) => sum + q.score_awarded, 0);
-  const totalMarksAvailable = questions.reduce((sum, q) => sum + q.marks_available, 0);
+  // Use total marks from backend if available, otherwise calculate from questions
+  const totalMarksAvailable = totalMarksFromBackend ?? questions.reduce((sum, q) => sum + q.marks_available, 0);
 
   // Track if score was edited but partial marks weren't updated
   const [scoreEdited, setScoreEdited] = useState(false);
@@ -660,25 +663,10 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
                             transform: 'translateY(-50%)'
                           }}
                         >
-                          <div className="relative w-16 flex flex-col items-center gap-1">
-                            <button
-                              onClick={() => handleBadgeClick(question)}
-                              className="relative w-12 h-12 flex items-center justify-center hover:scale-110 transition-transform"
-                              title={`Question ${question.question_number}: ${question.score_awarded}/${question.marks_available}`}
-                            >
-                              <svg width="48" height="48" viewBox="0 0 48 48" className="absolute inset-0" style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))' }}>
-                                <polygon
-                                  points="24,6 44,42 4,42"
-                                  fill={badgeStyle.fillColor}
-                                  opacity="0.9"
-                                />
-                              </svg>
-                              <span className="text-xs font-bold text-white relative z-10 mt-2">{question.score_awarded}/{question.marks_available}</span>
-                            </button>
-
+                          <div className="relative flex flex-row items-center gap-1.5">
                             {/* Action Icons - Only show for non-Graded OR in review mode */}
                             {(!isGraded || isReviewMode) && (
-                              <div className="flex gap-1.5 bg-white/90 rounded-full px-2 py-1 shadow-sm">
+                              <div className="flex flex-row gap-1 bg-white/90 rounded-full px-1.5 py-1 shadow-sm">
                                 <button
                                   onClick={(e) => handleVerifyQuestion(e, question.question_number)}
                                   className={`p-0.5 rounded-full transition-colors ${isVerified ? 'text-green-600' : 'text-gray-400 hover:text-green-600'}`}
@@ -696,6 +684,21 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
                                 </button>
                               </div>
                             )}
+
+                            <button
+                              onClick={() => handleBadgeClick(question)}
+                              className="relative w-12 h-12 flex items-center justify-center hover:scale-110 transition-transform"
+                              title={`Question ${question.question_number}: ${question.score_awarded}/${question.marks_available}`}
+                            >
+                              <svg width="48" height="48" viewBox="0 0 48 48" className="absolute inset-0" style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))' }}>
+                                <polygon
+                                  points="24,6 44,42 4,42"
+                                  fill={badgeStyle.fillColor}
+                                  opacity="0.9"
+                                />
+                              </svg>
+                              <span className="text-xs font-bold text-white relative z-10 mt-2">{question.score_awarded}/{question.marks_available}</span>
+                            </button>
                           </div>
                         </div>
                       );
@@ -713,25 +716,10 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
                             transform: 'translateY(-50%)'
                           }}
                         >
-                          <div className="relative w-16 flex flex-col items-center gap-1">
-                            <button
-                              onClick={() => handleBadgeClick(question)}
-                              className="relative w-12 h-12 flex items-center justify-center hover:scale-110 transition-transform"
-                              title={`Question ${question.question_number}: ${question.score_awarded}/${question.marks_available}`}
-                            >
-                              <svg width="48" height="48" viewBox="0 0 48 48" className="absolute inset-0" style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))' }}>
-                                <path
-                                  d="M24 4 L28.5 18.5 L44 18.5 L31.5 28 L36 42 L24 33 L12 42 L16.5 28 L4 18.5 L19.5 18.5 Z"
-                                  fill={badgeStyle.fillColor}
-                                  opacity="0.9"
-                                />
-                              </svg>
-                              <span className="text-xs font-bold text-white relative z-10">{question.score_awarded}/{question.marks_available}</span>
-                            </button>
-
+                          <div className="relative flex flex-row items-center gap-1.5">
                             {/* Action Icons - Only show for non-Graded OR in review mode */}
                             {(!isGraded || isReviewMode) && (
-                              <div className="flex gap-1.5 bg-white/90 rounded-full px-2 py-1 shadow-sm">
+                              <div className="flex flex-row gap-1 bg-white/90 rounded-full px-1.5 py-1 shadow-sm">
                                 <button
                                   onClick={(e) => handleVerifyQuestion(e, question.question_number)}
                                   className={`p-0.5 rounded-full transition-colors ${isVerified ? 'text-green-600' : 'text-gray-400 hover:text-green-600'}`}
@@ -749,6 +737,21 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
                                 </button>
                               </div>
                             )}
+
+                            <button
+                              onClick={() => handleBadgeClick(question)}
+                              className="relative w-12 h-12 flex items-center justify-center hover:scale-110 transition-transform"
+                              title={`Question ${question.question_number}: ${question.score_awarded}/${question.marks_available}`}
+                            >
+                              <svg width="48" height="48" viewBox="0 0 48 48" className="absolute inset-0" style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))' }}>
+                                <path
+                                  d="M24 4 L28.5 18.5 L44 18.5 L31.5 28 L36 42 L24 33 L12 42 L16.5 28 L4 18.5 L19.5 18.5 Z"
+                                  fill={badgeStyle.fillColor}
+                                  opacity="0.9"
+                                />
+                              </svg>
+                              <span className="text-xs font-bold text-white relative z-10">{question.score_awarded}/{question.marks_available}</span>
+                            </button>
                           </div>
                         </div>
                       );
@@ -766,18 +769,10 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
                             transform: 'translateY(-50%)'
                           }}
                         >
-                          <div className="relative w-16 flex flex-col items-center gap-1">
-                            <button
-                              onClick={() => handleBadgeClick(question)}
-                              className={`${badgeStyle.color} text-white text-xs font-bold rounded-full w-12 h-12 flex items-center justify-center shadow-lg hover:scale-110 transition-transform cursor-pointer`}
-                              title={`Question ${question.question_number}: ${question.score_awarded}/${question.marks_available}`}
-                            >
-                              <span className="text-xs">{question.score_awarded}/{question.marks_available}</span>
-                            </button>
-
+                          <div className="relative flex flex-row items-center gap-1.5">
                             {/* Action Icons - Only show for non-Graded OR in review mode */}
                             {(!isGraded || isReviewMode) && (
-                              <div className="flex gap-1.5 bg-white/90 rounded-full px-2 py-1 shadow-sm">
+                              <div className="flex flex-row gap-1 bg-white/90 rounded-full px-1.5 py-1 shadow-sm">
                                 <button
                                   onClick={(e) => handleVerifyQuestion(e, question.question_number)}
                                   className={`p-0.5 rounded-full transition-colors ${isVerified ? 'text-green-600' : 'text-gray-400 hover:text-green-600'}`}
@@ -795,6 +790,14 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
                                 </button>
                               </div>
                             )}
+
+                            <button
+                              onClick={() => handleBadgeClick(question)}
+                              className={`${badgeStyle.color} text-white text-xs font-bold rounded-full w-12 h-12 flex items-center justify-center shadow-lg hover:scale-110 transition-transform cursor-pointer`}
+                              title={`Question ${question.question_number}: ${question.score_awarded}/${question.marks_available}`}
+                            >
+                              <span className="text-xs">{question.score_awarded}/{question.marks_available}</span>
+                            </button>
                           </div>
                         </div>
                       );

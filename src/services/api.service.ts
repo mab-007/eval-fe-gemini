@@ -20,6 +20,21 @@ export interface ApiResponse<T> {
   message?: string;
 }
 
+// Helper function to convert relative PDF paths to public folder paths
+const getAbsolutePdfUrl = (relativePath: string): string => {
+  // If already an absolute URL, return as-is
+  if (relativePath.startsWith('http://') || relativePath.startsWith('https://')) {
+    return relativePath;
+  }
+
+  // Remove leading ./ if present
+  const cleanPath = relativePath.startsWith('./') ? relativePath.slice(2) : relativePath;
+
+  // Return path relative to public folder
+  // Vite serves files from public folder at root level
+  return `/${cleanPath}`;
+};
+
 export const apiService = {
   async getSubmissions(): Promise<SubmissionData[]> {
     try {
@@ -27,7 +42,11 @@ export const apiService = {
       const result: ApiResponse<SubmissionData[]> = await response.json();
 
       if (result.success) {
-        return result.data;
+        // Convert relative PDF paths to absolute URLs
+        return result.data.map(submission => ({
+          ...submission,
+          download_url: getAbsolutePdfUrl(submission.download_url)
+        }));
       } else {
         throw new Error('Failed to fetch submissions');
       }
@@ -43,7 +62,11 @@ export const apiService = {
       const result: ApiResponse<SubmissionData> = await response.json();
 
       if (result.success) {
-        return result.data;
+        // Convert relative PDF path to absolute URL
+        return {
+          ...result.data,
+          download_url: getAbsolutePdfUrl(result.data.download_url)
+        };
       } else {
         throw new Error(result.message || 'Submission not found');
       }
@@ -72,7 +95,11 @@ export const apiService = {
       const result: ApiResponse<SubmissionData> = await response.json();
 
       if (result.success) {
-        return result.data;
+        // Convert relative PDF path to absolute URL
+        return {
+          ...result.data,
+          download_url: getAbsolutePdfUrl(result.data.download_url)
+        };
       } else {
         throw new Error(result.message || 'Failed to verify submission');
       }

@@ -14,7 +14,8 @@ const QuestionSchema = new mongoose.Schema({
   marks_available: { type: Number },
   is_optional: { type: Boolean },
   sub_part: { type: String },
-  is_verified: {type: Boolean, default: false}
+  is_verified: {type: Boolean, default: false},
+  total_marks: { type: Number, required: true }
 }, { _id: false });
 
 const SubmissionSchema = new mongoose.Schema({
