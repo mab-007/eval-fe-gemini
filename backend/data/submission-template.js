@@ -1,0 +1,441 @@
+// Simplified test evaluation data for Answer Sheet View
+export const TEST_EVALUATION_DATA = {
+  "student_name": "KA BARIKAA",
+  "subject": "Applied Mathematics",
+  "status": "Needs Review",
+  "roll": "2",
+  "download_url": "/answer_sheet.pdf",
+  "description": "The student demonstrates proficiency in basic matrix operations, such as multiplication, addition, and finding the transpose and adjoint. However, there are significant conceptual gaps in more advanced topics, particularly in using determinant properties, understanding singular matrices, and setting up and solving systems of linear equations from word problems. The performance in Section A is fair, but the student struggled significantly with Sections B and C, indicating a need for more practice with proof-based and application-oriented questions.",
+  "questions": [
+    {
+      "score_awarded": 0,
+      "y_coordinate": 0.13,
+      "student_answer": "aij = (1+2j)^2 / 2\n= (2+2(2))^2 / 2\n= (2+4)^2 / 2\n= 6^2 / 2\n= 36/2 = 18\nA = [[2, 4], [6, 8]]",
+      "scoring_breakdown": [
+        {
+          "reasoning": "The student incorrectly calculated the elements of the matrix. While the calculation for a22 is shown and is correct (18), the final matrix A is completely incorrect and does not follow from the given formula for aij. The steps for calculating the other three elements (a11, a12, a21) are missing.",
+          "mark_awarded": false,
+          "partial_mark_awarded": false,
+          "page_number": 1
+        }
+      ],
+      "feedback": "You need to calculate each element of the 2x2 matrix separately using the formula a_ij = (i+2j)²/2. For example, for a_11, i=1 and j=1, so a_11 = (1+2*1)²/2 = 9/2. Ensure you calculate all four elements (a_11, a_12, a_21, a_22) before constructing the final matrix.",
+      "mistakes_made": [
+        {
+          "mistake_type": "execution_issue",
+          "mistake_description": "The student only calculated one element (a22) and then wrote an arbitrary incorrect matrix as the final answer, failing to apply the given formula for all elements.",
+          "lacking_competencies": [
+            "Procedural Knowledge",
+            "Problem Solving"
+          ],
+          "marks_lost": 2,
+          "page_number": 1
+        }
+      ],
+      "student_approach": "The student attempted to calculate one element of the matrix, a22, correctly. However, they failed to calculate the other elements and presented an unrelated matrix as the final answer.",
+      "question_summary": "This question asks to construct a 2x2 matrix A where each element a_ij is defined by the formula (i+2j)²/2.",
+      "question_number": 1,
+      "question_text": "Construct a 2 × 2 matrix A = [aij], where the elements are given by aij = (i+2j)²/2.",
+      "marks_available": 2,
+      "is_optional": false,
+      "sub_part": "NA"
+    },
+    {
+      "score_awarded": 2,
+      "y_coordinate": 0.54,
+      "student_answer": "2x+3 = 7 -> 2x = 7-3 -> 2x = 4 -> x = 2\n2y-6+2 = 14 -> 2y = 14+6-2 -> 2y = 18 -> y = 9",
+      "scoring_breakdown": [
+        {
+          "reasoning": "The student correctly performed scalar multiplication, matrix addition, and then equated the corresponding elements to find the values of x and y. All steps are accurate.",
+          "mark_awarded": true,
+          "partial_mark_awarded": false,
+          "page_number": 1
+        }
+      ],
+      "feedback": "Excellent work! You have correctly solved the matrix equation to find the values of x and y. Your steps are clear and logical.",
+      "mistakes_made": [],
+      "student_approach": "The student correctly applied scalar multiplication and matrix addition, then equated the corresponding elements of the resulting matrices to form and solve linear equations for x and y.",
+      "question_summary": "This question requires finding the values of x and y from a given matrix equation involving scalar multiplication and addition.",
+      "question_number": 2,
+      "question_text": "Find the values of x and y from the following equation:\n2 * [[x, 5], [7, y-3]] + [[3, -4], [1, 2]] = [[7, 6], [15, 14]]",
+      "marks_available": 2,
+      "is_optional": false,
+      "sub_part": "NA"
+    },
+    {
+      "score_awarded": 2,
+      "y_coordinate": 0.1,
+      "student_answer": "3A^2 - 2B + I\n3A^2 = [[3, -12], [36, 3]]\n2B = [[0, 8], [-2, 14]]\n...Final calculation leads to [[4, -20], [38, -10]]",
+      "scoring_breakdown": [
+        {
+          "reasoning": "The student correctly calculated A², then 3A², 2B, and I. The final matrix expression 3A² - 2B + I was computed accurately. All steps are correct.",
+          "mark_awarded": true,
+          "partial_mark_awarded": false,
+          "page_number": 2
+        }
+      ],
+      "feedback": "Great job on this question. You have correctly followed the order of operations, performing matrix multiplication, scalar multiplication, and addition/subtraction accurately.",
+      "mistakes_made": [],
+      "student_approach": "The student systematically calculated each term of the expression (3A², 2B, I) and then combined them using matrix subtraction and addition to arrive at the correct final matrix.",
+      "question_summary": "Given two 2x2 matrices A and B, the question asks to compute the matrix expression 3A² - 2B + I, where I is the identity matrix.",
+      "question_number": 3,
+      "question_text": "If A = [[2, -1], [3, 2]] and B = [[0, 4], [-1, 7]], find the matrix 3A² - 2B + I.",
+      "marks_available": 2,
+      "is_optional": false,
+      "sub_part": "NA"
+    },
+    {
+      "score_awarded": 2,
+      "y_coordinate": 0.45,
+      "student_answer": "|Adj A| = |A|^(n-1)\n= (-5)^(3-1)\n= (-5)^2\n= 25",
+      "scoring_breakdown": [
+        {
+          "reasoning": "The student correctly identified and applied the property |adj(A)| = |A|^(n-1) to find the value.",
+          "mark_awarded": true,
+          "partial_mark_awarded": false,
+          "page_number": 3
+        }
+      ],
+      "feedback": "Perfect! You correctly recalled and applied the formula for the determinant of an adjoint matrix.",
+      "mistakes_made": [],
+      "student_approach": "The student directly applied the standard formula relating the determinant of the adjoint of a matrix to the determinant of the matrix itself, substituting the given values to get the answer.",
+      "question_summary": "Given a 3x3 square matrix A with |A| = -5, the question asks to find the value of the determinant of its adjoint, |adj(A)|.",
+      "question_number": 5,
+      "question_text": "If A is a square matrix of order 3 and |A| = -5, find the value of |adj(A)|.",
+      "marks_available": 2,
+      "is_optional": false,
+      "sub_part": "NA"
+    },
+    {
+      "score_awarded": 0,
+      "y_coordinate": 0.65,
+      "student_answer": "taking x = 2\n[[4, 4], [3, -2]]\n... a singular matrix",
+      "scoring_breakdown": [
+        {
+          "reasoning": "The student did not demonstrate understanding of what a singular matrix is. A matrix is singular if its determinant is zero. The student picked an arbitrary value for x instead of setting the determinant to zero and solving for x.",
+          "mark_awarded": false,
+          "partial_mark_awarded": false,
+          "page_number": 3
+        }
+      ],
+      "feedback": "To find the value of 'x' that makes a matrix singular, you must first set its determinant to zero. For a 2x2 matrix [[a, b], [c, d]], the determinant is ad-bc. Set up the equation (6-x)(-x) - (4)(3) = 0 and solve the resulting quadratic equation for x.",
+      "mistakes_made": [
+        {
+          "mistake_type": "conceptual_gap",
+          "mistake_description": "The student does not understand that a singular matrix is one whose determinant is zero. They attempted to solve the problem by substituting a random value for x.",
+          "lacking_competencies": [
+            "Conceptual Understanding",
+            "Problem Solving"
+          ],
+          "marks_lost": 2,
+          "page_number": 3
+        }
+      ],
+      "student_approach": "The student did not follow the correct procedure. Instead of calculating the determinant and setting it to zero, they substituted a value for 'x' which does not solve the problem.",
+      "question_summary": "The question asks for the value of 'x' for which the given matrix A is a singular matrix.",
+      "question_number": 6,
+      "question_text": "For what value of 'x' is the matrix A = [[6-x, 4], [3, -x]] a singular matrix?",
+      "marks_available": 2,
+      "is_optional": false,
+      "sub_part": "NA"
+    },
+    {
+      "score_awarded": 2,
+      "y_coordinate": 0.77,
+      "student_answer": "Symmetric matrix is a matrix that is symmetric in nature where A' = A.\nIt is symmetric since A' = A",
+      "scoring_breakdown": [
+        {
+          "reasoning": "The student provided a correct, albeit informal, definition of a symmetric matrix (A'=A). They also correctly identified that the given matrix is symmetric. 1 mark for the definition and 1 mark for the check.",
+          "mark_awarded": true,
+          "partial_mark_awarded": false,
+          "page_number": 3
+        }
+      ],
+      "feedback": "Your definition and conclusion are correct. For full clarity, it's good practice to write out the transpose A' to explicitly show that it is equal to A.",
+      "mistakes_made": [],
+      "student_approach": "The student first defined a symmetric matrix using the condition A'=A and then correctly stated that the given matrix satisfies this condition, thus concluding it is symmetric.",
+      "question_summary": "This question asks for the definition of a symmetric matrix and to check whether a given 3x3 matrix is symmetric.",
+      "question_number": 7,
+      "question_text": "Define a Symmetric Matrix. Check if the matrix A is symmetric or not.",
+      "marks_available": 2,
+      "is_optional": false,
+      "sub_part": "NA"
+    },
+    {
+      "score_awarded": 1,
+      "y_coordinate": 0.1,
+      "student_answer": "8 - 14 = -6",
+      "scoring_breakdown": [
+        {
+          "reasoning": "The student correctly calculated the minor of the element '6'. The minor M23 is det([[1, 2], [7, 8]]) = 8 - 14 = -6. However, the cofactor C23 = (-1)^(2+3) * M23 was not calculated.",
+          "mark_awarded": false,
+          "partial_mark_awarded": true,
+          "page_number": 4
+        }
+      ],
+      "feedback": "You have correctly found the minor. Remember that the question also asks for the cofactor. The cofactor is calculated as C_ij = (-1)^(i+j) * M_ij. In this case, C_23 = (-1)^(2+3) * (-6) = 6.",
+      "mistakes_made": [
+        {
+          "mistake_type": "question_understanding",
+          "mistake_description": "The student answered only part of the question. They found the minor but neglected to find the cofactor.",
+          "lacking_competencies": [
+            "Attention to Detail"
+          ],
+          "marks_lost": 1,
+          "page_number": 4
+        }
+      ],
+      "student_approach": "The student correctly identified the submatrix needed to calculate the minor of the element '6' and computed its determinant. They did not proceed to calculate the cofactor.",
+      "question_summary": "The question asks to find the minor and the cofactor of the element '6' in a given 3x3 determinant.",
+      "question_number": 8,
+      "question_text": "Find the minor and the cofactor of the element '6' in the following determinant: |1 2 -3; 4 5 6; 7 8 9|",
+      "marks_available": 2,
+      "is_optional": false,
+      "sub_part": "NA"
+    },
+    {
+      "score_awarded": 2,
+      "y_coordinate": 0.3,
+      "student_answer": "A + A' = [[1, 2], [3, 4]] + [[1, 3], [2, 4]] = [[2, 5], [5, 8]]",
+      "scoring_breakdown": [
+        {
+          "reasoning": "The student correctly found the transpose of matrix A and then performed the matrix addition A + A' accurately.",
+          "mark_awarded": true,
+          "partial_mark_awarded": false,
+          "page_number": 4
+        }
+      ],
+      "feedback": "Well done. Your calculation of the transpose and the subsequent matrix addition is correct.",
+      "mistakes_made": [],
+      "student_approach": "The student first determined the transpose of matrix A and then added it to the original matrix A, correctly summing the corresponding elements.",
+      "question_summary": "Given a 2x2 matrix A, the question asks to find the sum A + A', where A' is the transpose of A.",
+      "question_number": 9,
+      "question_text": "If matrix A = [[1, 2], [3, 4]], find A + A', where A' is the transpose of A.",
+      "marks_available": 2,
+      "is_optional": false,
+      "sub_part": "NA"
+    },
+    {
+      "score_awarded": 1,
+      "y_coordinate": 0.55,
+      "student_answer": "(A+B)' = A' + B' prove\nLHS = [some incorrect working]\nRHS = A' + B' = [[3, 4], [sqrt(3), 2], [2, 0]] + [[2, 1], [-1, 2], [2, 4]]\nLHS = RHS. Hence proved.",
+      "scoring_breakdown": [
+        {
+          "reasoning": "The student correctly found the transposes A' and B' for the RHS. However, the LHS was not calculated correctly, and the proof was concluded without showing that the sum on the RHS equals the result from the LHS.",
+          "mark_awarded": false,
+          "partial_mark_awarded": true,
+          "page_number": 4
+        }
+      ],
+      "feedback": "You have correctly found the transposes A' and B'. To complete the proof, you must calculate both sides of the equation separately and show they result in the same matrix. For the LHS, first find A+B, then find the transpose of the resulting matrix.",
+      "mistakes_made": [
+        {
+          "mistake_type": "execution_issue",
+          "mistake_description": "The student failed to correctly compute the LHS of the identity and did not complete the calculation for the RHS, thus failing to provide a valid proof.",
+          "lacking_competencies": [
+            "Logical Reasoning",
+            "Procedural Knowledge"
+          ],
+          "marks_lost": 2,
+          "page_number": 4
+        }
+      ],
+      "student_approach": "The student correctly identified the components needed for the RHS (A' and B') but failed to calculate the LHS correctly and did not complete the proof by showing both sides are equal.",
+      "question_summary": "The question requires proving the matrix property (A + B)' = A' + B' for two given 2x2 matrices A and B.",
+      "question_number": 10,
+      "question_text": "If A and B are given matrices, prove that (A + B)' = A' + B'.",
+      "marks_available": 3,
+      "is_optional": false,
+      "sub_part": "NA"
+    },
+    {
+      "score_awarded": 3,
+      "y_coordinate": 0.4,
+      "student_answer": "using equation\n[[8, 5], [-5, 3]] - [[15, 5], [-5, 10]] + [[7, 0], [0, 7]] = [[0, 0], [0, 0]]\nHence proved.",
+      "scoring_breakdown": [
+        {
+          "reasoning": "The student correctly calculated A², 5A, and 7I. They then combined these matrices as per the expression A² - 5A + 7I and correctly showed that the result is the zero matrix O. Despite some minor transcription errors in the intermediate steps, the main calculations and final result are correct.",
+          "mark_awarded": true,
+          "partial_mark_awarded": false,
+          "page_number": 5
+        }
+      ],
+      "feedback": "Excellent work. You have correctly computed all the parts of the expression and demonstrated that the equation holds true.",
+      "mistakes_made": [],
+      "student_approach": "The student calculated A², 5A, and 7I individually and then substituted them into the given equation. They performed the matrix subtraction and addition to correctly show the result is the zero matrix.",
+      "question_summary": "For a given 2x2 matrix A, the task is to show that it satisfies the equation A² – 5A + 7I = O, where I is the identity matrix and O is the zero matrix.",
+      "question_number": 11,
+      "question_text": "Let A = [[3, 1], [-1, 2]]. Show that A² – 5A + 7I = O, where I is the identity matrix of order 2 and O is the zero matrix of order 2.",
+      "marks_available": 3,
+      "is_optional": false,
+      "sub_part": "NA"
+    },
+    {
+      "score_awarded": 0,
+      "y_coordinate": 0.1,
+      "student_answer": "prove |x+y z 1; y+z x 1; z+x y 1| = 0\n(x+y)(x+y)(x+z)(z+y)+z+x(z+y) = 0",
+      "scoring_breakdown": [
+        {
+          "reasoning": "The student did not use the properties of determinants as requested. Instead, they attempted to expand the determinant, and the expansion was incorrect. The approach is flawed and does not lead to a proof.",
+          "mark_awarded": false,
+          "partial_mark_awarded": false,
+          "page_number": 6
+        }
+      ],
+      "feedback": "The question requires using the properties of determinants. A key property here is that if two columns (or rows) of a determinant are identical, its value is zero. Try the column operation C1 -> C1 + C2. This will make all elements in the first column equal to (x+y+z), which you can then factor out.",
+      "mistakes_made": [
+        {
+          "mistake_type": "conceptual_gap",
+          "mistake_description": "The student did not apply properties of determinants as instructed. They attempted an incorrect expansion, showing a lack of understanding of the required method.",
+          "lacking_competencies": [
+            "Conceptual Understanding",
+            "Problem Solving"
+          ],
+          "marks_lost": 3,
+          "page_number": 6
+        }
+      ],
+      "student_approach": "The student wrote down the determinant to be proved but then attempted an incorrect and invalid expansion, failing to use the required properties of determinants.",
+      "question_summary": "The question asks to prove that a given 3x3 determinant with variable expressions is equal to zero by using the properties of determinants.",
+      "question_number": 12,
+      "question_text": "Using the properties of determinants, prove that: |x+y z 1; y+z x 1; z+x y 1| = 0",
+      "marks_available": 3,
+      "is_optional": false,
+      "sub_part": "NA"
+    },
+    {
+      "score_awarded": 0,
+      "y_coordinate": 0.38,
+      "student_answer": "(Work shown with specific matrices A = [[0, -5], [5, 0]] and B = [[2, -4], [4, 2]])\nAB - BA = [[-20, -10], [10, -20]] - [[-20, 20], [20, -20]]\n...Skew-symmetric matrix",
+      "scoring_breakdown": [
+        {
+          "reasoning": "The student misunderstood the question, which requires a general proof. They used specific matrices instead. Furthermore, the matrices chosen did not fit the condition (A and B must be symmetric), the calculation of AB-BA was incorrect, and the final conclusion that the result is skew-symmetric was wrong (the resulting matrix is symmetric).",
+          "mark_awarded": false,
+          "partial_mark_awarded": false,
+          "page_number": 6
+        }
+      ],
+      "feedback": "This question requires a general proof using properties of transpose, not an example with specific numbers. You need to show that (AB – BA)' = –(AB – BA). Start with (AB – BA)' and use the properties (X-Y)' = X'-Y' and (XY)' = Y'X'. Also, remember that since A and B are symmetric, A' = A and B' = B.",
+      "mistakes_made": [
+        {
+          "mistake_type": "question_understanding",
+          "mistake_description": "The student attempted to prove the general property using a specific, incorrect example instead of algebraic manipulation of transposes.",
+          "lacking_competencies": [
+            "Abstract Reasoning",
+            "Conceptual Understanding"
+          ],
+          "marks_lost": 3,
+          "page_number": 6
+        }
+      ],
+      "student_approach": "The student misunderstood the task and tried to demonstrate the property with numerical examples. They chose matrices that didn't meet the problem's conditions and made calculation errors.",
+      "question_summary": "The question asks for a proof that if A and B are symmetric matrices of the same order, then the matrix AB – BA is a skew-symmetric matrix.",
+      "question_number": 13,
+      "question_text": "If A and B are symmetric matrices of the same order, then prove that AB – BA is a skew-symmetric matrix.",
+      "marks_available": 3,
+      "is_optional": false,
+      "sub_part": "NA"
+    },
+    {
+      "score_awarded": 0,
+      "y_coordinate": 0.1,
+      "student_answer": "x+y+z = 6\nx+y+3+3(z) = 11\nx+3z = 2y",
+      "scoring_breakdown": [
+        {
+          "reasoning": "The student was unable to correctly translate the word problem into a system of linear equations. Only the first equation is correct. The subsequent steps of representing the system in matrix form and solving were not attempted.",
+          "mark_awarded": false,
+          "partial_mark_awarded": false,
+          "page_number": 7
+        }
+      ],
+      "feedback": "Carefully read the problem statement to form the equations. 'If we multiply the third number by 3 and add it to the second number, we get 11' translates to y + 3z = 11. 'By adding the first and third numbers, we get double the second number' translates to x + z = 2y. After forming the correct equations, you can proceed with the matrix inversion method.",
+      "mistakes_made": [
+        {
+          "mistake_type": "question_understanding",
+          "mistake_description": "The student failed to correctly interpret the sentences of the word problem to form a valid system of linear equations.",
+          "lacking_competencies": [
+            "Mathematical Modeling",
+            "Problem Solving"
+          ],
+          "marks_lost": 5,
+          "page_number": 7
+        }
+      ],
+      "student_approach": "The student attempted to translate the word problem into linear equations but made significant errors in forming the second and third equations, and did not proceed to solve the system.",
+      "question_summary": "This is a word problem that needs to be converted into a system of three linear equations and then solved for the three unknown numbers using the matrix inversion method.",
+      "question_number": 14,
+      "question_text": "The sum of three numbers is 6. If we multiply the third number by 3 and add it to the second number, we get 11. By adding the first and third numbers, we get double the second number. Represent this system of equations algebraically and solve for the numbers using the matrix inversion method.",
+      "marks_available": 5,
+      "is_optional": false,
+      "sub_part": "NA"
+    },
+    {
+      "score_awarded": 0,
+      "y_coordinate": 0.4,
+      "student_answer": "2x-y+3z = 9\nx+y+z = 6\nx-y+z = 2\nx = D1/D, y = D2/D, z = D3/D",
+      "scoring_breakdown": [
+        {
+          "reasoning": "The student correctly wrote down the system of equations and the formulas for Cramer's rule. However, no calculations were performed to find the determinants D, Dx, Dy, or Dz, and thus the system was not solved.",
+          "mark_awarded": false,
+          "partial_mark_awarded": false,
+          "page_number": 7
+        }
+      ],
+      "feedback": "You have correctly set up the problem and know the formulas for Cramer's rule. The next step is to calculate the required determinants. D is the determinant of the coefficient matrix, and for Dx, you replace the first column of the coefficient matrix with the constants, and so on.",
+      "mistakes_made": [
+        {
+          "mistake_type": "execution_issue",
+          "mistake_description": "The student only wrote down the initial setup and formulas but did not execute any of the necessary calculations to solve the problem.",
+          "lacking_competencies": [
+            "Procedural Knowledge"
+          ],
+          "marks_lost": 5,
+          "page_number": 7
+        }
+      ],
+      "student_approach": "The student correctly identified the system of equations and the required formulas for Cramer's rule but did not proceed with any of the determinant calculations needed to find the solution.",
+      "question_summary": "The question asks to solve a given system of three linear equations in three variables using Cramer's rule.",
+      "question_number": 15,
+      "question_text": "Solve the following system of linear equations using Cramer's rule: 2x - y + 3z = 9; x + y + z = 6; x - y + z = 2.",
+      "marks_available": 5,
+      "is_optional": false,
+      "sub_part": "NA"
+    },
+    {
+      "score_awarded": 0,
+      "y_coordinate": 0.65,
+      "student_answer": "Honesty + Regularity + Hardwork = 6000\nLet Honesty be x, regularity be y & Hardwork be z\nx+y+z = 6000\nx+3 + y+3z = 11,000\n2x+y+2z",
+      "scoring_breakdown": [
+        {
+          "reasoning": "The student correctly set up the variables and the first equation. However, the second and third equations were not formed correctly based on the problem statement. The student did not proceed to solve the system.",
+          "mark_awarded": false,
+          "partial_mark_awarded": false,
+          "page_number": 7
+        }
+      ],
+      "feedback": "You started well by defining the variables and forming the first equation correctly. Re-read the problem carefully for the other equations. 'Three times the award money for Hard work added to the award money for Honesty amounts to Rs. 11,000' is x + 3z = 11000. 'The award money for Honesty and Hard work is double the award money for Regularity' is x + z = 2y.",
+      "mistakes_made": [
+        {
+          "mistake_type": "question_understanding",
+          "mistake_description": "The student failed to correctly interpret the conditions in the word problem to formulate a correct system of linear equations, making it impossible to solve.",
+          "lacking_competencies": [
+            "Mathematical Modeling",
+            "Problem Solving"
+          ],
+          "marks_lost": 5,
+          "page_number": 7
+        }
+      ],
+      "student_approach": "The student correctly identified the variables and the first equation from the word problem but failed to accurately translate the remaining conditions into mathematical equations, halting their progress.",
+      "question_summary": "A word problem about distributing a cash award based on three values (Honesty, Regularity, Hard work) which needs to be modeled as a system of linear equations and solved using the matrix inversion method.",
+      "question_number": 16,
+      "question_text": "A school wants to award its students for the values of Honesty, Regularity, and Hard work with a total cash award of Rs. 6,000. Three times the award money for Hard work added to the award money for Honesty amounts to Rs. 11,000. The award money for Honesty and Hard work is double the award money for Regularity. Find the award money for each value, using the matrix inversion method.",
+      "marks_available": 5,
+      "is_optional": false,
+      "sub_part": "NA"
+    }
+  ],
+  "score_awarded": 15
+};
+
+

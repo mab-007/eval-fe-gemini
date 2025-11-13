@@ -1,30 +1,82 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { ActiveTab } from './types';
 import Header from './components/layout/Header';
 import EvaluationsView from './components/views/EvaluationsView';
 import ComingSoonView from './components/views/ComingSoonView';
 import UploadModal from './components/evaluations/UploadModal';
-import EvaluationDetailView from './components/views/EvaluationDetailView';
-import { MOCK_EVALUATIONS } from './constants';
+import AnswerSheetView from './components/views/AnswerSheetView';
+import { apiService, type SubmissionData } from './services/api.service';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('evaluate');
   const [hasData, setHasData] = useState(true);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [selectedEvaluationId, setSelectedEvaluationId] = useState<number | null>(null);
+  const [selectedSubmissionId, setSelectedSubmissionId] = useState<number | null>(null);
+  const [submissions, setSubmissions] = useState<SubmissionData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch submissions on mount
+  useEffect(() => {
+    fetchSubmissions();
+  }, []);
+
+  // Refresh data when landing on evaluate dashboard (not on detail view)
+  useEffect(() => {
+    if (activeTab === 'evaluate' && !selectedSubmissionId) {
+      fetchSubmissions();
+    }
+  }, [activeTab, selectedSubmissionId]);
+
+  const fetchSubmissions = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await apiService.getSubmissions();
+      setSubmissions(data);
+      setHasData(data.length > 0);
+    } catch (err) {
+      setError('Failed to load submissions');
+      console.error('Error loading submissions:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const openUploadModal = () => setIsUploadModalOpen(true);
   const closeUploadModal = () => setIsUploadModalOpen(false);
-  
+
   const handleSelectEvaluation = (id: number) => {
-    setSelectedEvaluationId(id);
+    setSelectedSubmissionId(id);
   };
+
   const handleBackToList = () => {
-    setSelectedEvaluationId(null);
+    setSelectedSubmissionId(null);
   };
-  
-  const selectedEvaluation = MOCK_EVALUATIONS.find(e => e.id === selectedEvaluationId);
+
+  const handleNavigateToPrevious = () => {
+    if (!selectedSubmissionId || submissions.length === 0) return;
+
+    const currentIndex = submissions.findIndex(s => s.id === selectedSubmissionId);
+    if (currentIndex > 0) {
+      setSelectedSubmissionId(submissions[currentIndex - 1].id);
+    }
+  };
+
+  const handleNavigateToNext = () => {
+    if (!selectedSubmissionId || submissions.length === 0) return;
+
+    const currentIndex = submissions.findIndex(s => s.id === selectedSubmissionId);
+    if (currentIndex < submissions.length - 1) {
+      setSelectedSubmissionId(submissions[currentIndex + 1].id);
+    }
+  };
+
+  const selectedSubmission = submissions.find(s => s.id === selectedSubmissionId);
+  const currentIndex = selectedSubmissionId ? submissions.findIndex(s => s.id === selectedSubmissionId) : -1;
+  const hasPrevious = currentIndex > 0;
+  const hasNext = currentIndex >= 0 && currentIndex < submissions.length - 1;
 
   return (
     <div className="min-h-screen bg-[#FAF7F5] font-sans text-stone-800">
@@ -36,14 +88,26 @@ const App: React.FC = () => {
 
       <main className="max-w-7xl mx-auto p-6 lg:p-8">
         {activeTab === 'evaluate' ? (
-          selectedEvaluation ? (
-            <EvaluationDetailView
-              evaluation={selectedEvaluation}
+          selectedSubmission ? (
+            <AnswerSheetView
+              evaluationReport={{ questions: selectedSubmission.questions }}
+              pdfUrl={selectedSubmission.download_url}
+              studentName={selectedSubmission.student_name}
+              studentRoll={selectedSubmission.roll}
+              subject={selectedSubmission.subject}
+              description={selectedSubmission.description}
+              submissionId={selectedSubmission.id}
+              status={selectedSubmission.status}
               onBack={handleBackToList}
+              onNavigateToPrevious={hasPrevious ? handleNavigateToPrevious : undefined}
+              onNavigateToNext={hasNext ? handleNavigateToNext : undefined}
             />
           ) : (
             <EvaluationsView
               hasData={hasData}
+              loading={loading}
+              error={error}
+              submissions={submissions}
               onUploadClick={openUploadModal}
               onEvaluationSelect={handleSelectEvaluation}
             />
@@ -54,18 +118,6 @@ const App: React.FC = () => {
       </main>
 
       {isUploadModalOpen && <UploadModal onClose={closeUploadModal} />}
-
-      {/* DEMO TOGGLE - REMOVE IN PROD */}
-      {activeTab === 'evaluate' && !selectedEvaluationId && (
-        <div className="fixed bottom-4 right-4 z-50">
-          <button
-            onClick={() => setHasData(!hasData)}
-            className="bg-stone-800 text-stone-200 px-4 py-2 rounded-full text-xs font-mono opacity-50 hover:opacity-100 transition-opacity"
-          >
-            Toggle Data State
-          </button>
-        </div>
-      )}
     </div>
   );
 };

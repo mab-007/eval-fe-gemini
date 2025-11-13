@@ -6,7 +6,9 @@ import { CheckCircle2, XCircle, UserCheck, MessageSquare, ThumbsUp, ThumbsDown, 
 interface QuestionFeedbackCardProps {
     feedback: QuestionFeedback;
     isSelected: boolean;
+    selectedMistake: Mistake | null;
     onSelect: () => void;
+    onMistakeSelect: (mistake: Mistake | null) => void;
     onUpdate: (feedback: QuestionFeedback) => void;
 }
 
@@ -36,7 +38,7 @@ const DetailSection: React.FC<{ title: string; children: React.ReactNode; notFou
 );
 
 
-const QuestionFeedbackCard: React.FC<QuestionFeedbackCardProps> = ({ feedback, isSelected, onSelect, onUpdate }) => {
+const QuestionFeedbackCard: React.FC<QuestionFeedbackCardProps> = ({ feedback, isSelected, selectedMistake, onSelect, onMistakeSelect, onUpdate }) => {
     const [isEditing, setIsEditing] = useState(false);
     
     const [editedScore, setEditedScore] = useState(feedback.score);
@@ -100,9 +102,9 @@ const QuestionFeedbackCard: React.FC<QuestionFeedbackCardProps> = ({ feedback, i
                     <h5 className="font-bold text-sm text-stone-800">Question {feedback.questionNumber}</h5>
                     {feedback.isEdited && <span title="Human verified"><UserCheck className="w-4 h-4 text-emerald-600" /></span>}
                 </div>
-                <div className="font-bold text-sm text-stone-900 bg-stone-100 px-2 py-0.5 rounded-md">
-                    {feedback.score} / {feedback.maxScore}
-                </div>
+            </div>
+            <div className="font-bold text-sm text-stone-900 bg-stone-100 px-2 py-0.5 rounded-md">
+                {feedback.score} / {feedback.maxScore}
             </div>
 
             <div className="pl-6">
@@ -124,8 +126,15 @@ const QuestionFeedbackCard: React.FC<QuestionFeedbackCardProps> = ({ feedback, i
                         <DetailSection title="Mistakes Identified">
                             <ul className="list-disc pl-5 space-y-1">
                                 {feedback.mistakesMade.map((mistake, index) => (
-                                    <li key={index} className="text-red-700/80">
-                                        {mistake.mistake_description} <span className="font-semibold">({mistake.marks_lost} marks lost)</span>
+                                    <li 
+                                        key={index} 
+                                        onClick={() => onMistakeSelect(mistake === selectedMistake ? null : mistake)}
+                                        className={`cursor-pointer transition-colors ${
+                                            selectedMistake === mistake
+                                                ? 'text-red-700 font-semibold'
+                                                : 'text-red-700/80 hover:text-red-600'
+                                        }`}>
+                                            {mistake.mistake_description} <span className="font-semibold">({mistake.marks_lost} marks lost)</span>
                                     </li>
                                 ))}
                             </ul>

@@ -24,4 +24,8 @@ export {
   XCircle,
   UserCheck,
   MessageSquare,
+  Pencil,
+  CheckCircle,
+  User,
+  Wrench,
 } from 'lucide-react';

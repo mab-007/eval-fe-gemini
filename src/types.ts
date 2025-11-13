@@ -17,6 +17,9 @@ export interface Mistake {
   mistake_description: string;
   lacking_competencies: string[];
   marks_lost: number;
+  x_coordinate?: number;
+  y_coordinate?: number;
+  page_number?: number;
 }
 
 export interface QuestionFeedback {
@@ -37,6 +40,8 @@ export interface QuestionFeedback {
   typology: string;
   questionType: string;
   chapterName: string;
+  x_coordinate?: number;
+  y_coordinate?: number;
   
   // These are managed by the UI state
   studentComment?: string;

@@ -1,0 +1,75 @@
+{
+  "student_name": "test student",
+  "evaluation_date": "2025-11-13T02:30:00.000Z",
+  "total_questions": 16,
+  "verified_questions": 16,
+  "questions": [
+    {
+      "question_number": 1,
+      "score_awarded": 0,
+      "marks_available": 2,
+      "parts_breakdown": [],
+      "question_text": "Construct a 2 × 2 matrix A = [aij], where the elements are given by aij = (i+2j)²/2.",
+      "student_answer": "aij = (i+2j)^2/2\n= (2+2(2))^2 / 2\n= (2+4)^2 / 2\n= 6^2 / 2 = 36/2 = 18\nA = [[2, 4], [6, 8]]",
+      "feedback": "You have correctly understood how to substitute the values of 'i' and 'j' into the formula for one element. However, you need to apply this process for all four elements of the 2x2 matrix. For example, for a₁₁, i=1 and j=1, so a₁₁ = (1+2*1)²/2 = 9/2. Please recalculate the remaining elements to construct the correct matrix.",
+      "mistakes_made": [
+        {
+          "mistake_type": "execution_issue",
+          "mistake_description": "The student calculated only one element (a₂₂) correctly but did not calculate the other elements, leading to an incorrect final matrix.",
+          "lacking_competencies": [
+            "Matrix construction",
+            "Systematic calculation"
+          ],
+          "marks_lost": 2,
+          "page_number": 1
+        }
+      ],
+      "scoring_breakdown": [
+        {
+          "reasoning": "The student correctly calculated the value for the element a₂₂, but failed to calculate the other three elements (a₁₁, a₁₂, a₂₁) correctly. The final matrix provided is incorrect.",
+          "mark_awarded": false,
+          "partial_mark_awarded": false,
+          "page_number": 1
+        }
+      ],
+      "is_verified": true
+    },
+    {
+      "question_number": 2,
+      "score_awarded": 2,
+      "marks_available": 2,
+      "parts_breakdown": [
+        {
+          "part": "a",
+          "marks": 1
+        },
+        {
+          "part": "b",
+          "marks": 1
+        }
+      ],
+      "question_text": "Find the values of x and y from the following equation: 2 * [[x, 5], [7, y-3]] + [[3, -4], [1, 2]] = [[7, 6], [15, 14]]",
+      "student_answer": "2[[x, 5], [7, y-3]] + [[3, -4], [1, 2]] = [[7, 6], [15, 14]]\n[[2x, 10], [14, 2y-6]] + [[3, -4], [1, 2]] = [[7, 6], [15, 14]]\n[[2x+3, 10-4], [14+1, 2y-6+2]] = [[7, 6], [15, 14]]\n2x+3 = 7 => 2x = 7-3 => 2x = 4 => x=2\n2y-6+2 = 14 => 2y = 14+6-2 => 2y = 18 => y=9",
+      "feedback": "Excellent work! You have correctly applied the principles of scalar multiplication, matrix addition, and equality of matrices to solve for x and y. All steps are clearly shown and accurate.",
+      "mistakes_made": [],
+      "scoring_breakdown": [
+        {
+          "reasoning": "The student correctly performed scalar multiplication and matrix addition.",
+          "mark_awarded": true,
+          "partial_mark_awarded": true,
+          "page_number": 1
+        },
+        {
+          "reasoning": "The student correctly equated the corresponding elements and solved the resulting linear equations to find the correct values for x and y.",
+          "mark_awarded": true,
+          "partial_mark_awarded": true,
+          "page_number": 1
+        }
+      ],
+      "is_verified": true
+    }
+  ],
+  "total_score": 10,
+  "total_marks_available": 38,
+  "percentage": 26
+}
