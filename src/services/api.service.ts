@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = 'http://13.232.248.209:3001/api';
 
 export interface SubmissionData {
   id: number;
