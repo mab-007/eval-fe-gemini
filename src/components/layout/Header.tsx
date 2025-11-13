@@ -10,7 +10,7 @@ interface HeaderProps {
   onUploadClick: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange, onUploadClick }) => {
+const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange }) => {
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
   return (
     <header className="sticky top-0 z-50 bg-[#F0EBE6]/80 backdrop-blur-md border-b border-stone-200 px-6 py-3 flex items-center justify-between">

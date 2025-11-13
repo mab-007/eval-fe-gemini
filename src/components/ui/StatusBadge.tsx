@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import type { EvaluationStatus } from '../../types';
 import { CheckCircle2, BrainCircuit, AlertCircle } from '../icons';
 
