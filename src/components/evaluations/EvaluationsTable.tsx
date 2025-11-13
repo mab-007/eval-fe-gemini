@@ -2,7 +2,7 @@
 import React from 'react';
 import type { Evaluation } from '../../types';
 import StatusBadge from '../ui/StatusBadge';
-import { FileText, MoreHorizontal } from '../icons';
+import { FileText } from '../icons';
 
 interface EvaluationsTableProps {
   evaluations: Evaluation[];
@@ -10,6 +10,7 @@ interface EvaluationsTableProps {
 }
 
 const EvaluationsTable: React.FC<EvaluationsTableProps> = ({ evaluations, onRowClick }) => {
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full">
@@ -50,11 +51,6 @@ const EvaluationsTable: React.FC<EvaluationsTableProps> = ({ evaluations, onRowC
                 ) : (
                   <span className="text-stone-400 text-sm">—</span>
                 )}
-              </td>
-              <td className="px-6 py-4 text-right">
-                <button onClick={(e) => e.stopPropagation()} className="p-2 hover:bg-stone-100 rounded-full text-stone-400 hover:text-stone-700 transition-colors">
-                  <MoreHorizontal className="w-5 h-5" />
-                </button>
               </td>
             </tr>
           ))}

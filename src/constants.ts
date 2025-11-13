@@ -1,22 +1,19 @@
 import type { Evaluation, QuestionFeedback, ApiEvaluationResponse } from './types';
 
 export const MOCK_EVALUATIONS: Evaluation[] = [
-  { id: 1, title: 'Mid-Term Physics Test', student: 'Harry Potter', date: '2024-11-09', status: 'Graded', score: 92, subject: 'Physics' },
-  { id: 2, title: 'Science Set 1 QP', student: 'Anan Sharma', date: '2024-11-09', status: 'Needs Review', score: 37, subject: 'Science' },
-  { id: 3, title: 'Potions Final Exam', student: 'Hermione Granger', date: '2024-11-08', status: 'Graded', score: 100, subject: 'Potions' },
-  { id: 4, title: 'Transfiguration Quiz', student: 'Neville Longbottom', date: '2024-11-08', status: 'Processing', score: null, subject: 'Transfiguration' },
-  { id: 5, title: 'Defense Against Dark Arts', student: 'Draco Malfoy', date: '2024-11-07', status: 'Graded', score: 85, subject: 'DADA' },
+  { id: 1, title: 'Social Science Final Exam', student: 'Student Name', date: '2024-11-12', status: 'Graded', score: 54, subject: 'Social Science' },
 ];
 
+// Detailed evaluation data for Social Science Final Exam (ID: 1)
 export const DETAILED_EVALUATION_DATA: ApiEvaluationResponse = {
     "id": "ac338709-cfef-4fa1-813d-b148a3f3bcde",
     "owner_id": "1fb7e392-3487-44b7-8c19-c874bb989eeb",
     "exam_template_id": null,
-    "student_name": null,
+    "student_name": "Student Name",
     "evaluation_report": {
-        "overall_score": 29.5,
+        "overall_score": 43.0,
         "total_possible_score": 80,
-        "overall_feedback": "*   The student demonstrates a foundational understanding in specific areas, particularly excelling in certain recall-based MCQs and direct application questions in Biology (e.g., Hydra budding, hypermetropia correction diagram) and Physics (e.g., blue sky, parallel circuit current calculation).\n*   However, significant conceptual gaps are evident across all three subjects, leading to frequent errors in fundamental biological processes, chemical properties, and core physics principles, compounded by a high number of skipped questions and misinterpretation of question requirements.\n*   To improve, a thorough review of fundamental definitions, mechanisms, and specific keywords in questions is crucial, alongside practicing comprehensive answer writing, accurate chemical equations/diagrams, and effective time management to ensure all questions are attempted.",
+        "overall_feedback": "*   The student demonstrates strong factual recall in many MCQs, excels in map-based questions, and shows good comprehension in several case study analyses, particularly in History and the Self-Help Groups long answer, indicating a solid foundation in specific content areas.\n*   However, significant conceptual gaps are evident in Economics (Sectors of Indian Economy, Development indicators), Civics (Outcomes of Democracy, nuances of equality), and Federalism (legislative lists), leading to errors in conceptual MCQs and short answers.\n*   A recurring area for improvement is the lack of detailed elaboration with specific examples for short and long answer questions, alongside misinterpreting the precise demand of questions, often providing descriptive answers instead of analytical ones.\n*   Crucially, a large number of questions, especially in the 2, 3, and 5-mark categories, were left unattempted, suggesting significant time management challenges and a need to strategically attempt all sections of the paper.\n*   For future improvement, focus on revising core economic and civics concepts, practice analytical questions requiring detailed explanations and examples, and critically, improve time management to ensure all questions are attempted.",
         "predicted_grade": null,
         "questions": [
             {
@@ -5631,13 +5628,13 @@ export const DETAILED_EVALUATION_DATA: ApiEvaluationResponse = {
         "manual_annotations": []
     },
     "processing_status": "completed",
-    "created_at": "2025-11-09T12:09:50.865813Z",
-    "original_filename": "Science Set 1 QP.pdf + Anan Science 10A Set 1.pdf",
-    "download_url": "./src/assets/science-exam-paper.pdf",
+    "created_at": "2024-11-12T17:40:29Z",
+    "original_filename": "social_science_final_exam.pdf",
+    "download_url": "https://spc-study-demo-bucket.s3.ap-south-1.amazonaws.com/exam-files/exam_papers/eadb44d2-0a5e-4732-8180-6781bbdf1ed0/9833db95-8c8e-4cda-a8e8-4c5bb9fd4406/answer_sheet.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIA4M3P4FIG2TZXVKYB%2F20251112%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20251112T174841Z&X-Amz-Expires=300&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEHIaCmFwLXNvdXRoLTEiRzBFAiEApSUUo2FzxycW71gSFKUD75sPutO7euHko3XLGknqrhYCIBL9kDIqlshDFzGYDauC4BKKUBpOkeKueu8F74E0lh0vKs4DCDsQABoMODUyMjQ4NzY2OTg5IgwR55SqhIJ6gZF0ZWgqqwMr%2BwzeELsu0%2FMoCjYFA4iSP8d9tuEekvn6Vk6YutGcEOBbr47dZz3a%2Fdq8bAV0XyBVM3fpeSaCgLe6H4wjtxm1xn0CGBuE%2FbJR5mpPJp7pdC55bGL9066aQ7Cy%2BoQnlIrM3pmoiyOgP%2FvhVxYIsI2bQ%2F8g4STRtffaakZu%2FJ6cB7wIwdtwC0E5qhCfvpmyKXtTkdWDIM4BNKmAbyskhrhi48T2nQBcNhRb%2FGbxnwmfOnPLE%2BADsxhma6x5KsH7JX9OhaDzGVBQ34YrHF2uyKzKrV2pFSMAhcjqcL%2BgUUY5ZY7QwmvlM7Z6f1457EeFSiiLktkStjTNJ6tdJ6qY4KdMMQn%2BQfmdq6YcrLbpAQI%2FZ%2Fs9qPht%2BET6GsiUtvr8m8Lp5HQv20gRvRuiFGLTPq5eKYBHsEm1O3WafFcEEXyI4BivvEyxAkXTpRRCHdWAhGkDd9%2FEJrBjqZM3PZ7ER51n1sFjpH642k2NB3H1rbqYS2vvC9hJAaOh7RWS1%2FYnXv2uY5264yc%2B64s7q5%2FRgzSNih7zR4AI7JZk06IrwDQ5JukWvqlune4JZ6KUMMSI08gGOpICetTUrmhx%2B6azM59tndu%2FJYxwosfkQtGWhGCIcu0XV4GSquRM5EpoZ%2F8bKmbV2DRt7EXpuYXPbaf%2FTo7VDFcfPhcM2WuueS5LRbJkR1VmEyUq8wOEXereaDmW1YRkjGy5hfU8EQZMN1tUhJZDdqEdlm%2FErAcG5Fn%2B4ejNOcVMa7vuflPrS0c3nV7eTS%2F14esPxoOJo6KPdlH6YEmDYjazOvxsedVEHxIbolH9XLUTrGANyp0LKTTrdvYkwAYNkbua%2F8Xpqsw9YujD6PWR1scIHfCffFA5ci7VOdwoEU4SmRcUJ%2F70mr5Wkh2v3QQIcxX1%2FbnMGBF50iQVSUrucfSQdYuLdZNqWZ4ApJk9ToOpHqEh0g%3D%3D&X-Amz-Signature=bbb1a728bc1bb1a674c1b7e35fda8450e4c021027a633814292bbb4b1f569d4d&X-Amz-SignedHeaders=host&response-content-disposition=inline",
     "metadata": {
-        "class_level": "9",
-        "subject": "Science",
-        "year": "2025"
+        "class_level": "Class 10",
+        "subject": "Social Science",
+        "year": "2024"
     }
 };
 
@@ -5671,3 +5668,24 @@ function transformApiQuestionToQuestionFeedback(apiQuestion: any): QuestionFeedb
 
 // Export the transformed data for the UI to use
 export const MOCK_DETAILED_QUESTIONS: QuestionFeedback[] = DETAILED_EVALUATION_DATA.evaluation_report.questions.map(transformApiQuestionToQuestionFeedback);
+
+// Mapping of evaluation IDs to their detailed data
+export const DETAILED_EVALUATIONS_MAP: Record<number, ApiEvaluationResponse> = {
+  1: DETAILED_EVALUATION_DATA, // Social Science Final Exam
+  2: DETAILED_EVALUATION_DATA
+};
+
+// Mapping of evaluation IDs to their question feedback
+export const MOCK_DETAILED_QUESTIONS_MAP: Record<number, QuestionFeedback[]> = {
+  1: MOCK_DETAILED_QUESTIONS, // Social Science Final Exam
+};
+
+// Helper function to get detailed evaluation data by evaluation ID
+export const getDetailedEvaluationData = (evaluationId: number): ApiEvaluationResponse | null => {
+  return DETAILED_EVALUATIONS_MAP[evaluationId] || null;
+};
+
+// Helper function to get question feedback by evaluation ID
+export const getQuestionFeedback = (evaluationId: number): QuestionFeedback[] => {
+  return MOCK_DETAILED_QUESTIONS_MAP[evaluationId] || [];
+};
