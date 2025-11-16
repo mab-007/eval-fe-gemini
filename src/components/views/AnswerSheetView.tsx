@@ -101,6 +101,37 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
   // Session-level flag to suppress partial marks warning for entire session
   const [suppressPartialMarksWarning, setSuppressPartialMarksWarning] = useState(false);
 
+  // Track which question badge is active (based on cursor proximity)
+  const [activeQuestionNumber, setActiveQuestionNumber] = useState<number | null>(null);
+
+  // Track which badge is being edited inline
+  const [editingBadgeNumber, setEditingBadgeNumber] = useState<number | null>(null);
+  const [tempScoreAwarded, setTempScoreAwarded] = useState<number>(0);
+
+  // Welcome modal for non-evaluated papers
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [showPreferencesModal, setShowPreferencesModal] = useState(false);
+  const [isMinimizing, setIsMinimizing] = useState(false);
+
+  // User preferences for panel expansion (not visibility - all panels are always visible)
+  const [keepQuestionOpen, setKeepQuestionOpen] = useState(false);
+  const [keepAIReasoningOpen, setKeepAIReasoningOpen] = useState(false);
+  const [keepScoringOpen, setKeepScoringOpen] = useState(false);
+
+  // Track reasoning editing state
+  const [isEditingReasoning, setIsEditingReasoning] = useState(false);
+
+  // FAQ modal state
+  const [showFAQ, setShowFAQ] = useState(false);
+  const [isFAQClosing, setIsFAQClosing] = useState(false);
+  const [expandedFAQs, setExpandedFAQs] = useState<number[]>([]);
+
+  // Track animation state for capsules
+  const [showCapsulesAnimation, setShowCapsulesAnimation] = useState(false);
+
+  // Teacher remarks for student
+  const [teacherRemarks, setTeacherRemarks] = useState('');
+
   // Ref for marks_available input to focus when updating partial marks
   const marksAvailableInputRef = useRef<HTMLInputElement>(null);
 
@@ -130,48 +161,79 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
     1 // At least 1 page
   );
 
-  // Helper function to get badge style based on score and verification
+  // Helper function to get badge style with verification colors
   const getBadgeStyle = (scoreAwarded: number, marksAvailable: number, isVerified: boolean) => {
-    // If not verified, always show gray
-    if (!isVerified) {
-      return {
-        color: 'bg-gray-400/90',
-        fillColor: '#9ca3af', // gray-400
-        shape: scoreAwarded === 0 ? 'triangle' : scoreAwarded === marksAvailable ? 'star' : 'circle'
-      };
+    let color = 'bg-gray-400/90';
+    let fillColor = '#9ca3af'; // gray-400
+
+    // If verified, color based on marks awarded
+    if (isVerified) {
+      if (scoreAwarded === marksAvailable) {
+        // Full marks - green
+        color = 'bg-green-500/90';
+        fillColor = '#22c55e'; // green-500
+      } else if (scoreAwarded === 0) {
+        // Zero marks - red
+        color = 'bg-red-500/90';
+        fillColor = '#ef4444'; // red-500
+      } else {
+        // Partial marks - yellow
+        color = 'bg-yellow-500/90';
+        fillColor = '#eab308'; // yellow-500
+      }
     }
 
-    // Verified badges show their respective colors
-    if (scoreAwarded === 0) {
-      // Wrong - Red Triangle
-      return {
-        color: 'bg-red-400/90',
-        fillColor: '#f87171', // red-400
-        shape: 'triangle'
-      };
-    }
-    if (scoreAwarded === marksAvailable) {
-      // Correct - Green Star
-      return {
-        color: 'bg-emerald-400/90',
-        fillColor: '#34d399', // emerald-400
-        shape: 'star'
-      };
-    }
-    // Partial - Yellow Circle
     return {
-      color: 'bg-amber-400/90',
-      fillColor: '#fbbf24', // amber-400
-      shape: 'circle'
+      color,
+      fillColor,
+      shape: scoreAwarded === 0 ? 'triangle' : scoreAwarded === marksAvailable ? 'star' : 'circle'
     };
   };
 
+  // Find the first unverified question
+  const findFirstUnverifiedQuestion = (): number | null => {
+    if (questions.length === 0) return null;
+
+    const unverified = questions.find(q => !q.is_verified);
+    return unverified ? unverified.question_number : null;
+  };
+
   const handleBadgeClick = (question: QuestionSummary) => {
-    setSelectedQuestion(question);
-    setIsEditingScore(false);
-    setEditedScoreAwarded(question.score_awarded);
-    setEditedMarksAvailable(question.marks_available);
-    setEditedPartsBreakdown(question.parts_breakdown || []);
+    // Single click shows capsules on the right
+    setActiveQuestionNumber(question.question_number);
+  };
+
+  const handleBadgeDoubleClick = (e: React.MouseEvent, question: QuestionSummary) => {
+    e.stopPropagation();
+    e.preventDefault();
+    // Double click makes only the numerator editable
+    setEditingBadgeNumber(question.question_number);
+    setTempScoreAwarded(question.score_awarded);
+  };
+
+  const handleBadgeEditKeyDown = (e: React.KeyboardEvent, questionNumber: number) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveBadgeEdit(questionNumber);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setEditingBadgeNumber(null);
+    }
+  };
+
+  const saveBadgeEdit = (questionNumber: number) => {
+    const updatedQuestions = questions.map(q =>
+      q.question_number === questionNumber
+        ? { ...q, score_awarded: tempScoreAwarded }
+        : q
+    );
+    setQuestions(updatedQuestions);
+    setEditingBadgeNumber(null);
+
+    // Mark as having unsaved changes if in review mode
+    if (isReviewMode) {
+      setHasUnsavedChanges(true);
+    }
   };
 
   const closeModal = () => {
@@ -248,12 +310,41 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
     setScoreEdited(false);
   };
 
+  // Helper function to generate mark suggestions
+  const generateMarkSuggestions = (marksAvailable: number, currentScore: number): number[] => {
+    const suggestions: number[] = [];
+
+    // Add whole numbers from 0 to marks_available
+    for (let i = 0; i <= marksAvailable; i++) {
+      if (i !== currentScore) {
+        suggestions.push(i);
+      }
+    }
+
+    // Add half marks if marks_available is greater than 1
+    if (marksAvailable > 1) {
+      for (let i = 0; i < marksAvailable; i++) {
+        const halfMark = i + 0.5;
+        if (halfMark !== currentScore) {
+          suggestions.push(halfMark);
+        }
+      }
+    }
+
+    // Sort suggestions
+    return suggestions.sort((a, b) => a - b);
+  };
   const handleVerifyQuestion = (e: React.MouseEvent, questionNumber: number) => {
     e.stopPropagation();
-    // Update the question's is_verified status
+
+    // Get current verification status
+    const currentQuestion = questions.find(q => q.question_number === questionNumber);
+    const wasVerified = currentQuestion?.is_verified || false;
+
+    // Toggle the question's is_verified status
     const updatedQuestions = questions.map(q =>
       q.question_number === questionNumber
-        ? { ...q, is_verified: true }
+        ? { ...q, is_verified: !q.is_verified }
         : q
     );
     setQuestions(updatedQuestions);
@@ -263,35 +354,46 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
       setHasUnsavedChanges(true);
     }
 
-    // Scroll to next unverified question
-    setTimeout(() => {
-      // First, try to find the next unverified question after the current one
-      let nextUnverified = updatedQuestions.find(
-        q => !q.is_verified && q.question_number > questionNumber
-      );
+    // If question was just verified (not unverified), scroll to next unverified question
+    if (!wasVerified) {
+      // Calculate next unverified question from the updated list
+      const unverifiedQuestions = updatedQuestions.filter(q => !q.is_verified);
 
-      // If no unverified question found after current, look for any unverified from the beginning
-      if (!nextUnverified) {
-        nextUnverified = updatedQuestions.find(q => !q.is_verified);
-      }
+      if (unverifiedQuestions.length > 0) {
+        // Check if there are any skipped questions (unverified questions before the current one)
+        const skippedQuestions = unverifiedQuestions.filter(q => q.question_number < questionNumber);
 
-      if (nextUnverified) {
-        // Find the badge element for the next unverified question
-        const badgeElement = document.querySelector(`[data-question-number="${nextUnverified.question_number}"]`);
-        if (badgeElement) {
-          badgeElement.scrollIntoView({
-            behavior: 'smooth',
-            block: 'center',
-            inline: 'center'
-          });
+        let nextQuestionNumber = null;
+
+        if (skippedQuestions.length > 0) {
+          // Return to first skipped question
+          nextQuestionNumber = skippedQuestions[0].question_number;
+        } else {
+          // Otherwise, go to next unverified question in sequence
+          const nextQuestions = unverifiedQuestions.filter(q => q.question_number > questionNumber);
+          if (nextQuestions.length > 0) {
+            nextQuestionNumber = nextQuestions[0].question_number;
+          } else {
+            // Loop back to first unverified
+            nextQuestionNumber = unverifiedQuestions[0].question_number;
+          }
+        }
+
+        // Scroll to the next unverified badge
+        if (nextQuestionNumber) {
+          setTimeout(() => {
+            const badgeElement = document.getElementById(`badge-q${nextQuestionNumber}`);
+            if (badgeElement) {
+              badgeElement.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center',
+                inline: 'center'
+              });
+            }
+          }, 300);
         }
       }
-    }, 300); // Small delay to allow state update
-  };
-
-  const handleEditBadge = (e: React.MouseEvent, question: QuestionSummary) => {
-    e.stopPropagation();
-    handleBadgeClick(question);
+    }
   };
 
   const handleMilestoneClick = (question: QuestionSummary) => {
@@ -351,6 +453,45 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
     setEditedPartsBreakdown(updated);
   };
 
+  // Validate and handle score awarded changes
+  const handleScoreAwardedChange = (value: string) => {
+    const numValue = Number(value);
+
+    // Allow empty string for editing
+    if (value === '') {
+      setEditedScoreAwarded(0);
+      return;
+    }
+
+    // Validate: score must be between 0 and marks available
+    if (!isNaN(numValue) && numValue >= 0 && numValue <= editedMarksAvailable) {
+      setEditedScoreAwarded(numValue);
+    }
+    // If invalid, don't update (keeps previous valid value)
+  };
+
+  // Validate and handle marks available changes
+  const handleMarksAvailableChange = (value: string) => {
+    const numValue = Number(value);
+
+    // Allow empty string for editing
+    if (value === '') {
+      setEditedMarksAvailable(0);
+      return;
+    }
+
+    // Validate: marks must be positive
+    if (!isNaN(numValue) && numValue >= 0) {
+      setEditedMarksAvailable(numValue);
+
+      // Auto-adjust score awarded if it exceeds new max
+      if (editedScoreAwarded > numValue) {
+        setEditedScoreAwarded(numValue);
+      }
+    }
+    // If invalid, don't update (keeps previous valid value)
+  };
+
   // Submit verification to backend API
   const submitVerification = async () => {
     if (!submissionId) {
@@ -385,7 +526,8 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
         status: 'Graded',
         score_awarded: totalScore,
         total_marks: totalMarksAvailable,
-        description: description || `Evaluation completed for ${studentName}`
+        description: description || `Evaluation completed for ${studentName}`,
+        teacher_remarks: teacherRemarks.trim() || null
       };
 
       // Call API to verify submission
@@ -442,7 +584,14 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
 
   // Update questions when evaluationReport changes (when navigating between submissions)
   useEffect(() => {
-    setQuestions(evaluationReport.questions || []);
+    const newQuestions = evaluationReport.questions || [];
+    setQuestions(newQuestions);
+
+    // Show welcome modal for non-evaluated papers
+    if (!isGraded) {
+      setShowWelcomeModal(true);
+    }
+
     // Reset all modal states when switching submissions
     setSelectedQuestion(null);
     setIsEditingScore(false);
@@ -455,7 +604,33 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
     setScoreEdited(false);
     setShowPartialMarksWarning(false);
     setDontUpdatePartialMarks(false);
-  }, [evaluationReport]);
+  }, [evaluationReport, isGraded]);
+
+  // Reset expanded section when active question changes and trigger animation
+  useEffect(() => {
+    // Trigger exit animation
+    setShowCapsulesAnimation(false);
+    // Small delay then trigger entrance animation
+    const timer = setTimeout(() => {
+      setShowCapsulesAnimation(true);
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [activeQuestionNumber]);
+
+  // Set active question to first unverified question
+  useEffect(() => {
+    const firstUnverified = findFirstUnverifiedQuestion();
+    setActiveQuestionNumber(firstUnverified);
+  }, [questions]);
+
+  // Reset capsules animation when active question changes
+  useEffect(() => {
+    setShowCapsulesAnimation(false);
+    const timer = setTimeout(() => {
+      setShowCapsulesAnimation(true);
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [activeQuestionNumber]);
 
   // Check if all questions are verified and show celebration (only for non-Graded submissions)
   useEffect(() => {
@@ -478,6 +653,8 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
         showCelebration ||
         showUnsavedChangesModal ||
         showPartialMarksWarning ||
+        showWelcomeModal ||
+        showPreferencesModal ||
         event.target instanceof HTMLInputElement ||
         event.target instanceof HTMLTextAreaElement
       ) {
@@ -490,6 +667,32 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
       } else if (event.key === 'ArrowRight' && onNavigateToNext) {
         event.preventDefault();
         onNavigateToNext();
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        // Navigate to previous question
+        const currentIndex = questions.findIndex(q => q.question_number === activeQuestionNumber);
+        if (currentIndex > 0) {
+          const prevQuestion = questions[currentIndex - 1];
+          setActiveQuestionNumber(prevQuestion.question_number);
+          // Scroll to badge
+          const badgeElement = document.getElementById(`badge-q${prevQuestion.question_number}`);
+          if (badgeElement) {
+            badgeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }
+      } else if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        // Navigate to next question
+        const currentIndex = questions.findIndex(q => q.question_number === activeQuestionNumber);
+        if (currentIndex < questions.length - 1) {
+          const nextQuestion = questions[currentIndex + 1];
+          setActiveQuestionNumber(nextQuestion.question_number);
+          // Scroll to badge
+          const badgeElement = document.getElementById(`badge-q${nextQuestion.question_number}`);
+          if (badgeElement) {
+            badgeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }
       }
     };
 
@@ -501,12 +704,97 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
     selectedQuestion,
     showCelebration,
     showUnsavedChangesModal,
-    showPartialMarksWarning
+    showPartialMarksWarning,
+    showWelcomeModal,
+    showPreferencesModal,
+    activeQuestionNumber,
+    questions
   ]);
 
   return (
     <>
-      <div className="animate-in -mx-6 lg:-mx-8">
+      {/* Blur effect when modals are open */}
+      <style>{`
+        .blur-background {
+          filter: blur(4px);
+          transition: filter 0.3s ease;
+        }
+
+        @keyframes minimizeToSwitches {
+          0% {
+            transform: translate(0, 0) scale(1);
+            opacity: 1;
+          }
+          100% {
+            transform: translate(calc(-50vw + 250px), calc(-50vh + 120px)) scale(0.05);
+            opacity: 0;
+          }
+        }
+
+        .minimizing {
+          animation: minimizeToSwitches 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        @keyframes switchPulse {
+          0%, 100% {
+            transform: scale(1);
+          }
+          25% {
+            transform: scale(1.15);
+          }
+          50% {
+            transform: scale(1);
+          }
+          75% {
+            transform: scale(1.15);
+          }
+        }
+
+        .switch-pulse {
+          animation: switchPulse 0.8s ease-in-out;
+        }
+
+        @keyframes switchGlow {
+          0%, 100% {
+            box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+          }
+          50% {
+            box-shadow: 0 0 0 8px rgba(59, 130, 246, 0);
+          }
+        }
+
+        .switch-glow {
+          animation: switchGlow 1s ease-out;
+        }
+      `}</style>
+      {/* Custom CSS animations */}
+      <style>{`
+        @keyframes slideInFromRight {
+          from {
+            transform: translateX(100%) translateY(-50%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0) translateY(-50%);
+            opacity: 1;
+          }
+        }
+
+        .capsules-slide-in {
+          animation: slideInFromRight 0.4s ease-out forwards;
+        }
+
+        /* Hide scrollbar for marks suggestions */
+        .scrollbar-hidden::-webkit-scrollbar {
+          display: none;
+        }
+
+        .scrollbar-hidden {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}</style>
+      <div className={`animate-in -mx-6 lg:-mx-8 ${showWelcomeModal || showPreferencesModal ? 'blur-background' : ''}`}>
         {/* Header */}
         <div className="mb-8 px-6 lg:px-8 flex items-center justify-between">
           <button
@@ -549,6 +837,63 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
                     </div>
                   </>
                 )}
+              </div>
+
+              {/* Panel Preferences Controls */}
+              <div className="flex items-center gap-4" id="preference-switches">
+                {/* Question Toggle */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-purple-600">Q</span>
+                  <button
+                    onClick={() => setKeepQuestionOpen(!keepQuestionOpen)}
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                      keepQuestionOpen ? 'bg-purple-600' : 'bg-stone-300'
+                    }`}
+                    title="Keep Question Open"
+                  >
+                    <span
+                      className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                        keepQuestionOpen ? 'translate-x-5' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* AI Reasoning Toggle */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-blue-600">AI</span>
+                  <button
+                    onClick={() => setKeepAIReasoningOpen(!keepAIReasoningOpen)}
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                      keepAIReasoningOpen ? 'bg-blue-600' : 'bg-stone-300'
+                    }`}
+                    title="Keep AI Reasoning Open"
+                  >
+                    <span
+                      className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                        keepAIReasoningOpen ? 'translate-x-5' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* Scoring Breakdown Toggle */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-green-600">✓</span>
+                  <button
+                    onClick={() => setKeepScoringOpen(!keepScoringOpen)}
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                      keepScoringOpen ? 'bg-green-600' : 'bg-stone-300'
+                    }`}
+                    title="Keep Scoring Breakdown Open"
+                  >
+                    <span
+                      className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                        keepScoringOpen ? 'translate-x-5' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
               </div>
 
               {/* Review Again Button for Graded submissions */}
@@ -594,12 +939,191 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
                 <p className="text-sm text-stone-700 leading-relaxed">{description}</p>
               </div>
             )}
+
+            {/* Badge Legend - Always show for tutors */}
+            <div className="pt-4 border-t border-stone-200 mt-4">
+              <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wide mb-3">Badge Legend</h4>
+              <div className="flex flex-wrap gap-4">
+                {/* Star Badge */}
+                <div className="flex items-center gap-2">
+                  <svg width="24" height="24" viewBox="0 0 48 48" style={{ filter: 'drop-shadow(0 2px 3px rgba(0, 0, 0, 0.2))' }}>
+                    <path
+                      d="M24 4 L28.5 18.5 L44 18.5 L31.5 28 L36 42 L24 33 L12 42 L16.5 28 L4 18.5 L19.5 18.5 Z"
+                      fill="#10b981"
+                      opacity="0.9"
+                    />
+                  </svg>
+                  <span className="text-xs text-stone-700">
+                    <strong className="font-semibold">Star:</strong> Full marks
+                  </span>
+                </div>
+
+                {/* Circle Badge */}
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 shadow-md" />
+                  <span className="text-xs text-stone-700">
+                    <strong className="font-semibold">Circle:</strong> Partial marks
+                  </span>
+                </div>
+
+                {/* Triangle Badge */}
+                <div className="flex items-center gap-2">
+                  <svg width="24" height="24" viewBox="0 0 48 48" style={{ filter: 'drop-shadow(0 2px 3px rgba(0, 0, 0, 0.2))' }}>
+                    <polygon
+                      points="24,6 44,42 4,42"
+                      fill="#ef4444"
+                      opacity="0.9"
+                    />
+                  </svg>
+                  <span className="text-xs text-stone-700">
+                    <strong className="font-semibold">Triangle:</strong> Incorrect / No marks
+                  </span>
+                </div>
+              </div>
+
+              {/* Keyboard Shortcuts Hint */}
+              <div className="mt-3 pt-3 border-t border-stone-100">
+                <p className="text-xs text-stone-500">
+                  <strong className="font-semibold text-stone-600">Tip:</strong> Use <kbd className="px-1.5 py-0.5 bg-stone-200 rounded text-[10px] font-mono">←</kbd> <kbd className="px-1.5 py-0.5 bg-stone-200 rounded text-[10px] font-mono">→</kbd> arrow keys to navigate between submissions
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Main Content - PDF pages stacked vertically with Progress Bar */}
-        <div className="flex justify-center gap-12 bg-gradient-to-b from-stone-50 to-stone-100 py-8 px-8">
-          {/* PDF Container */}
+        {/* Horizontal Progress Bar */}
+        <div className="sticky top-0 py-4 px-8 z-[9999]">
+          <div className="max-w-6xl mx-auto">
+            {/* Progress Header */}
+            <div className="mb-3 text-center">
+              <div className="text-sm font-bold text-stone-700">Progress</div>
+              <div className="text-xs text-stone-500 mt-1">
+                {verifiedQuestionsCount} / {questions.length} verified
+              </div>
+            </div>
+
+            {/* Horizontal Progress Bar */}
+            <div className="relative flex items-center gap-2">
+              {/* Start Milestone */}
+              <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-300 to-emerald-500 border-2 border-emerald-400 flex items-center justify-center shadow-lg">
+                  <span className="text-white text-base font-bold">▶</span>
+                </div>
+                <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wide">Start</span>
+              </div>
+
+              {/* Progress Track */}
+              <div className="flex-1 relative h-12 bg-white rounded-full shadow-inner overflow-hidden border-2 border-stone-300">
+                {/* Segmented Progress based on individual question marks */}
+                <div className="absolute left-0 top-0 bottom-0 flex w-full">
+                  {questions.map((question) => {
+                    const isVerified = question.is_verified || false;
+                    const segmentWidth = 100 / questions.length;
+
+                    // Progress bar fill with green fluid when verified
+                    let segmentColor = 'bg-transparent';
+                    if (isVerified) {
+                      segmentColor = 'bg-gradient-to-r from-green-400 via-green-500 to-green-400';
+                    }
+
+                    return (
+                      <div
+                        key={question.question_number}
+                        className={`h-full transition-all duration-500 ${segmentColor}`}
+                        style={{ width: `${segmentWidth}%` }}
+                      >
+                        {isVerified && (
+                          <div className="absolute inset-0 bg-gradient-to-b from-white to-transparent opacity-30"></div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Question Milestones */}
+                <div className="absolute inset-0 flex items-center justify-between px-1">
+                  {questions.map((question, index) => {
+                    const isVerified = question.is_verified || false;
+                    const progress = (verifiedQuestionsCount / questions.length) * 100;
+                    const milestonePosition = ((index) / (questions.length - 1)) * 100;
+                    const isReached = progress >= milestonePosition;
+
+                    // Determine color based on verification and marks
+                    let bgColor = 'bg-white border-stone-300 text-stone-400';
+                    if (isVerified) {
+                      if (question.score_awarded === question.marks_available) {
+                        bgColor = 'bg-gradient-to-br from-green-400 to-green-600 border-green-500 text-white scale-110 shadow-green-300';
+                      } else if (question.score_awarded === 0) {
+                        bgColor = 'bg-gradient-to-br from-red-400 to-red-600 border-red-500 text-white scale-110 shadow-red-300';
+                      } else {
+                        bgColor = 'bg-gradient-to-br from-yellow-400 to-yellow-600 border-yellow-500 text-white scale-110 shadow-yellow-300';
+                      }
+                    } else if (isReached) {
+                      bgColor = 'bg-gradient-to-br from-stone-200 to-stone-300 border-stone-400 text-stone-600';
+                    }
+
+                    return (
+                      <button
+                        key={question.question_number}
+                        onClick={() => handleMilestoneClick(question)}
+                        className={`
+                          w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold
+                          transition-all duration-500 ease-out shadow-md cursor-pointer z-10
+                          hover:scale-125 active:scale-105 relative
+                          ${bgColor}
+                        `}
+                        title={`Jump to Question ${question.question_number}`}
+                      >
+                        {isVerified ? (
+                          question.score_awarded === question.marks_available ? (
+                            // Full marks - checkmark
+                            <CheckCircle className="w-5 h-5" fill="currentColor" />
+                          ) : question.score_awarded === 0 ? (
+                            // Zero marks - triangle (pointing down)
+                            <svg width="14" height="14" viewBox="0 0 12 12" className="absolute">
+                              <polygon points="6,2 10,10 2,10" fill="currentColor" />
+                            </svg>
+                          ) : (
+                            // Partial marks - circle
+                            <svg width="10" height="10" viewBox="0 0 8 8" className="absolute">
+                              <circle cx="4" cy="4" r="3" fill="currentColor" />
+                            </svg>
+                          )
+                        ) : (
+                          <span>{question.question_number}</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Completed Milestone */}
+              <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center shadow-lg transition-all duration-500 ${
+                  verifiedQuestionsCount === questions.length
+                    ? 'bg-gradient-to-br from-emerald-400 to-emerald-600 border-emerald-500 scale-110'
+                    : 'bg-white border-stone-300'
+                }`}>
+                  {verifiedQuestionsCount === questions.length ? (
+                    <CheckCircle className="w-6 h-6 text-white" fill="currentColor" />
+                  ) : (
+                    <span className="text-stone-400 text-base font-bold">✓</span>
+                  )}
+                </div>
+                <span className={`text-[10px] font-bold uppercase tracking-wide ${
+                  verifiedQuestionsCount === questions.length ? 'text-emerald-700' : 'text-stone-500'
+                }`}>
+                  Done
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content - PDF pages stacked vertically */}
+        <div className="flex justify-center bg-gradient-to-b from-stone-50 to-stone-100 py-8 relative" style={{ paddingLeft: '200px', paddingRight: '300px' }}>
+          {/* PDF Container - Shifted left */}
           <div className="relative" style={{ width: `${PDF_WIDTH}px` }}>
               {/* Render each page */}
               {Array.from({ length: totalPages }, (_, pageIndex) => {
@@ -664,40 +1188,37 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
                           }}
                         >
                           <div className="relative flex flex-row items-center gap-1.5">
-                            {/* Action Icons - Only show for non-Graded OR in review mode */}
-                            {(!isGraded || isReviewMode) && (
-                              <div className="flex flex-row gap-1 bg-white/90 rounded-full px-1.5 py-1 shadow-sm">
-                                <button
-                                  onClick={(e) => handleVerifyQuestion(e, question.question_number)}
-                                  className={`p-0.5 rounded-full transition-colors ${isVerified ? 'text-green-600' : 'text-gray-400 hover:text-green-600'}`}
-                                  title={isVerified ? "Verified" : "Click to verify"}
-                                  disabled={isVerified}
-                                >
-                                  <CheckCircle className="w-5 h-5" fill={isVerified ? "currentColor" : "none"} />
-                                </button>
-                                <button
-                                  onClick={(e) => handleEditBadge(e, question)}
-                                  className="p-0.5 rounded-full text-amber-600 hover:text-amber-700 transition-colors"
-                                  title="Edit score"
-                                >
-                                  <Pencil className="w-5 h-5" />
-                                </button>
-                              </div>
-                            )}
-
                             <button
                               onClick={() => handleBadgeClick(question)}
-                              className="relative w-12 h-12 flex items-center justify-center hover:scale-110 transition-transform"
+                              onDoubleClick={(e) => handleBadgeDoubleClick(e, question)}
+                              className="relative w-16 h-16 flex items-center justify-center hover:scale-110 transition-transform"
                               title={`Question ${question.question_number}: ${question.score_awarded}/${question.marks_available}`}
                             >
-                              <svg width="48" height="48" viewBox="0 0 48 48" className="absolute inset-0" style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))' }}>
+                              <svg width="64" height="64" viewBox="0 0 64 64" className="absolute inset-0" style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))' }}>
                                 <polygon
-                                  points="24,6 44,42 4,42"
+                                  points="32,8 58,56 6,56"
                                   fill={badgeStyle.fillColor}
                                   opacity="0.9"
                                 />
                               </svg>
-                              <span className="text-xs font-bold text-white relative z-10 mt-2">{question.score_awarded}/{question.marks_available}</span>
+                              {editingBadgeNumber === question.question_number ? (
+                                <div className="relative z-10 mt-3 flex gap-0.5 text-[10px]" onClick={(e) => e.stopPropagation()}>
+                                  <input
+                                    type="number"
+                                    value={tempScoreAwarded}
+                                    onChange={(e) => setTempScoreAwarded(Number(e.target.value))}
+                                    onKeyDown={(e) => handleBadgeEditKeyDown(e, question.question_number)}
+                                    onBlur={() => saveBadgeEdit(question.question_number)}
+                                    className="w-7 h-5 text-center bg-white border border-stone-300 rounded px-0.5 font-bold"
+                                    autoFocus
+                                  />
+                                  <span className="self-center">/{question.marks_available}</span>
+                                </div>
+                              ) : (
+                                <span className="text-[11px] font-bold text-stone-900 relative z-10 mt-3">
+                                  {question.score_awarded}/{question.marks_available}
+                                </span>
+                              )}
                             </button>
                           </div>
                         </div>
@@ -717,40 +1238,37 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
                           }}
                         >
                           <div className="relative flex flex-row items-center gap-1.5">
-                            {/* Action Icons - Only show for non-Graded OR in review mode */}
-                            {(!isGraded || isReviewMode) && (
-                              <div className="flex flex-row gap-1 bg-white/90 rounded-full px-1.5 py-1 shadow-sm">
-                                <button
-                                  onClick={(e) => handleVerifyQuestion(e, question.question_number)}
-                                  className={`p-0.5 rounded-full transition-colors ${isVerified ? 'text-green-600' : 'text-gray-400 hover:text-green-600'}`}
-                                  title={isVerified ? "Verified" : "Click to verify"}
-                                  disabled={isVerified}
-                                >
-                                  <CheckCircle className="w-5 h-5" fill={isVerified ? "currentColor" : "none"} />
-                                </button>
-                                <button
-                                  onClick={(e) => handleEditBadge(e, question)}
-                                  className="p-0.5 rounded-full text-amber-600 hover:text-amber-700 transition-colors"
-                                  title="Edit score"
-                                >
-                                  <Pencil className="w-5 h-5" />
-                                </button>
-                              </div>
-                            )}
-
                             <button
                               onClick={() => handleBadgeClick(question)}
-                              className="relative w-12 h-12 flex items-center justify-center hover:scale-110 transition-transform"
+                              onDoubleClick={(e) => handleBadgeDoubleClick(e, question)}
+                              className="relative w-16 h-16 flex items-center justify-center hover:scale-110 transition-transform"
                               title={`Question ${question.question_number}: ${question.score_awarded}/${question.marks_available}`}
                             >
-                              <svg width="48" height="48" viewBox="0 0 48 48" className="absolute inset-0" style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))' }}>
+                              <svg width="64" height="64" viewBox="0 0 64 64" className="absolute inset-0" style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))' }}>
                                 <path
-                                  d="M24 4 L28.5 18.5 L44 18.5 L31.5 28 L36 42 L24 33 L12 42 L16.5 28 L4 18.5 L19.5 18.5 Z"
+                                  d="M32 5 L38 24.5 L58.5 24.5 L42 37 L48 56 L32 44 L16 56 L22 37 L5.5 24.5 L26 24.5 Z"
                                   fill={badgeStyle.fillColor}
                                   opacity="0.9"
                                 />
                               </svg>
-                              <span className="text-xs font-bold text-white relative z-10">{question.score_awarded}/{question.marks_available}</span>
+                              {editingBadgeNumber === question.question_number ? (
+                                <div className="relative z-10 flex gap-0.5 text-[10px]" onClick={(e) => e.stopPropagation()}>
+                                  <input
+                                    type="number"
+                                    value={tempScoreAwarded}
+                                    onChange={(e) => setTempScoreAwarded(Number(e.target.value))}
+                                    onKeyDown={(e) => handleBadgeEditKeyDown(e, question.question_number)}
+                                    onBlur={() => saveBadgeEdit(question.question_number)}
+                                    className="w-7 h-5 text-center bg-white border border-stone-300 rounded px-0.5 font-bold"
+                                    autoFocus
+                                  />
+                                  <span className="self-center">/{question.marks_available}</span>
+                                </div>
+                              ) : (
+                                <span className="text-[11px] font-bold text-stone-900 relative z-10">
+                                  {question.score_awarded}/{question.marks_available}
+                                </span>
+                              )}
                             </button>
                           </div>
                         </div>
@@ -770,33 +1288,30 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
                           }}
                         >
                           <div className="relative flex flex-row items-center gap-1.5">
-                            {/* Action Icons - Only show for non-Graded OR in review mode */}
-                            {(!isGraded || isReviewMode) && (
-                              <div className="flex flex-row gap-1 bg-white/90 rounded-full px-1.5 py-1 shadow-sm">
-                                <button
-                                  onClick={(e) => handleVerifyQuestion(e, question.question_number)}
-                                  className={`p-0.5 rounded-full transition-colors ${isVerified ? 'text-green-600' : 'text-gray-400 hover:text-green-600'}`}
-                                  title={isVerified ? "Verified" : "Click to verify"}
-                                  disabled={isVerified}
-                                >
-                                  <CheckCircle className="w-5 h-5" fill={isVerified ? "currentColor" : "none"} />
-                                </button>
-                                <button
-                                  onClick={(e) => handleEditBadge(e, question)}
-                                  className="p-0.5 rounded-full text-amber-600 hover:text-amber-700 transition-colors"
-                                  title="Edit score"
-                                >
-                                  <Pencil className="w-5 h-5" />
-                                </button>
-                              </div>
-                            )}
-
                             <button
                               onClick={() => handleBadgeClick(question)}
-                              className={`${badgeStyle.color} text-white text-xs font-bold rounded-full w-12 h-12 flex items-center justify-center shadow-lg hover:scale-110 transition-transform cursor-pointer`}
+                              onDoubleClick={(e) => handleBadgeDoubleClick(e, question)}
+                              className={`${badgeStyle.color} text-stone-900 text-xs font-bold rounded-full w-16 h-16 flex items-center justify-center shadow-lg hover:scale-110 transition-transform cursor-pointer`}
                               title={`Question ${question.question_number}: ${question.score_awarded}/${question.marks_available}`}
                             >
-                              <span className="text-xs">{question.score_awarded}/{question.marks_available}</span>
+                              {editingBadgeNumber === question.question_number ? (
+                                <div className="flex gap-0.5 text-[10px]" onClick={(e) => e.stopPropagation()}>
+                                  <input
+                                    type="number"
+                                    value={tempScoreAwarded}
+                                    onChange={(e) => setTempScoreAwarded(Number(e.target.value))}
+                                    onKeyDown={(e) => handleBadgeEditKeyDown(e, question.question_number)}
+                                    onBlur={() => saveBadgeEdit(question.question_number)}
+                                    className="w-7 h-5 text-center bg-white border border-stone-300 rounded px-0.5 font-bold"
+                                    autoFocus
+                                  />
+                                  <span className="self-center">/{question.marks_available}</span>
+                                </div>
+                              ) : (
+                                <span className="text-[11px] font-bold">
+                                  {question.score_awarded}/{question.marks_available}
+                                </span>
+                              )}
                             </button>
                           </div>
                         </div>
@@ -807,140 +1322,339 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
               );
             })}
           </div>
-
-          {/* Progress Bar - Cylindrical with Milestones */}
-          <div className="sticky top-8 h-fit">
-            <div className="flex flex-col items-center">
-              {/* Progress Header */}
-              <div className="mb-4 text-center">
-                <div className="text-sm font-bold text-stone-700">Progress</div>
-                <div className="text-xs text-stone-500 mt-1">
-                  {verifiedQuestionsCount} / {questions.length} verified
-                </div>
-              </div>
-
-              {/* Cylindrical Progress Bar */}
-              <div className="relative flex flex-col items-center">
-                {/* Vertical Cylinder Track */}
-                <div
-                  className="relative w-3 bg-gradient-to-r from-stone-300 via-stone-200 to-stone-300 rounded-full shadow-inner"
-                  style={{
-                    height: `${Math.max(questions.length * 60, 300)}px`,
-                  }}
-                >
-                  {/* Progress Fill */}
-                  <div
-                    className="absolute top-0 left-0 right-0 bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-400 rounded-full transition-all duration-500 ease-out shadow-lg"
-                    style={{
-                      height: `${(verifiedQuestionsCount / questions.length) * 100}%`,
-                    }}
-                  >
-                    {/* Shine effect */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30 rounded-full"></div>
-                  </div>
-                </div>
-
-                {/* Question Milestones */}
-                <div
-                  className="absolute inset-0 flex flex-col justify-between py-1"
-                  style={{
-                    height: `${Math.max(questions.length * 60, 300)}px`,
-                  }}
-                >
-                  {questions.map((question, index) => {
-                    const isVerified = question.is_verified || false;
-                    const progress = (verifiedQuestionsCount / questions.length) * 100;
-                    const milestonePosition = ((index) / (questions.length - 1)) * 100;
-                    const isReached = progress >= milestonePosition;
-
-                    return (
-                      <div
-                        key={question.question_number}
-                        className="flex items-center gap-3 relative"
-                        style={{
-                          position: 'absolute',
-                          top: `${(index / (questions.length - 1)) * 100}%`,
-                          transform: 'translateY(-50%)',
-                        }}
-                      >
-                        {/* Connector Line */}
-                        <div className="absolute left-1/2 w-6 h-0.5 bg-stone-300"></div>
-
-                        {/* Milestone Circle */}
-                        <div className="relative z-10">
-                          <button
-                            onClick={() => handleMilestoneClick(question)}
-                            className={`
-                              w-8 h-8 rounded-full border-3 flex items-center justify-center text-xs font-bold
-                              transition-all duration-500 ease-out shadow-md cursor-pointer
-                              hover:scale-125 active:scale-105
-                              ${isVerified
-                                ? 'bg-gradient-to-br from-emerald-400 to-emerald-600 border-emerald-500 text-white scale-110 shadow-emerald-300'
-                                : isReached
-                                ? 'bg-gradient-to-br from-stone-200 to-stone-300 border-stone-400 text-stone-600'
-                                : 'bg-white border-stone-300 text-stone-400'
-                              }
-                            `}
-                            style={{ borderWidth: '3px' }}
-                            title={`Jump to Question ${question.question_number}`}
-                          >
-                            {isVerified ? (
-                              <CheckCircle className="w-5 h-5" fill="currentColor" />
-                            ) : (
-                              <span>{question.question_number}</span>
-                            )}
-                          </button>
-                        </div>
-
-                        {/* Question Number Label */}
-                        <button
-                          onClick={() => handleMilestoneClick(question)}
-                          className={`
-                            text-xs font-semibold px-2 py-1 rounded-md whitespace-nowrap
-                            transition-all duration-300 cursor-pointer hover:scale-105
-                            ${isVerified
-                              ? 'bg-emerald-100 text-emerald-700 border border-emerald-300 hover:bg-emerald-200'
-                              : 'bg-stone-100 text-stone-600 border border-stone-200 hover:bg-stone-200'
-                            }
-                          `}
-                          title={`Jump to Question ${question.question_number}`}
-                        >
-                          Q{question.question_number}
-                          {isVerified && (
-                            <span className="ml-1 text-emerald-500">✓</span>
-                          )}
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Completion Badge */}
-                {verifiedQuestionsCount === questions.length && (
-                  <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 animate-in fade-in zoom-in duration-500">
-                    <div className="bg-gradient-to-r from-emerald-500 to-green-500 text-white px-4 py-2 rounded-full text-xs font-bold shadow-lg flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4" fill="currentColor" />
-                      Complete!
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
         </div>
 
       </div>
 
+      {/* Floating Capsules Panel - Right Side - Always visible */}
+      {activeQuestionNumber && (
+        <div className={`fixed right-8 top-2/3 w-[400px] z-[9998] space-y-3 transition-all duration-300 ${showCapsulesAnimation ? 'capsules-slide-in' : 'opacity-0'} ${showWelcomeModal || showPreferencesModal ? 'blur-sm' : ''}`}>
+              {(() => {
+                const question = questions.find(q => q.question_number === activeQuestionNumber);
+                if (!question) return null;
+
+                return (
+                  <>
+                    {/* Question Capsule */}
+                    {question.question_text && (
+                      <div className="border border-stone-200 rounded-xl overflow-hidden bg-white shadow-2xl">
+                        <button
+                          onClick={() => setKeepQuestionOpen(!keepQuestionOpen)}
+                          className="w-full px-4 py-3 flex items-center justify-between bg-gradient-to-r from-[#ebe3dd] to-[#e0d2c8] hover:from-[#e0d2c8] hover:to-[#d5c4b8] transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#d5c4b8] to-[#cbb8a8] flex items-center justify-center">
+                              <span className="text-white text-xs font-bold">Q</span>
+                            </div>
+                            <span className="font-bold text-sm text-stone-900">Question {activeQuestionNumber}</span>
+                          </div>
+                          <svg
+                            className={`w-5 h-5 text-stone-600 transition-transform duration-300 ${keepQuestionOpen ? 'rotate-90' : ''}`}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </button>
+                        <div
+                          className={`transition-all duration-300 ease-in-out ${
+                            keepQuestionOpen ? 'max-h-96 overflow-y-auto' : 'max-h-0 overflow-hidden'
+                          }`}
+                        >
+                          <div className="p-4 bg-[#ebe3dd] animate-in slide-in-from-right duration-300">
+                            <p className="text-sm text-stone-600 leading-relaxed break-words overflow-wrap-anywhere">
+                              {question.question_text}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Reasoning Capsule */}
+                    {question.feedback && (
+                      <div className="border border-stone-200 rounded-xl overflow-hidden bg-white shadow-2xl">
+                        <button
+                          onClick={() => setKeepAIReasoningOpen(!keepAIReasoningOpen)}
+                          className="w-full px-4 py-3 flex items-center justify-between bg-gradient-to-r from-[#ebe3dd] to-[#e0d2c8] hover:from-[#e0d2c8] hover:to-[#d5c4b8] transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#c0a896] to-[#b59984] flex items-center justify-center">
+                              <span className="text-white text-xs font-bold">R</span>
+                            </div>
+                            <span className="font-bold text-sm text-stone-900">Reasoning</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {!isEditingReasoning && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setIsEditingReasoning(true);
+                                  setKeepAIReasoningOpen(true);
+                                }}
+                                className="p-1 hover:bg-[#d5c4b8] rounded transition-colors"
+                                title="Edit reasoning"
+                              >
+                                <Pencil className="w-4 h-4 text-stone-700" />
+                              </button>
+                            )}
+                            <svg
+                              className={`w-5 h-5 text-stone-600 transition-transform duration-300 ${keepAIReasoningOpen ? 'rotate-90' : ''}`}
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </div>
+                        </button>
+                        <div
+                          className={`transition-all duration-300 ease-in-out ${
+                            keepAIReasoningOpen ? 'max-h-96 overflow-y-auto' : 'max-h-0 overflow-hidden'
+                          }`}
+                        >
+                          <div className="p-4 bg-[#ebe3dd] animate-in slide-in-from-right duration-300">
+                            <div
+                              contentEditable={isEditingReasoning}
+                              suppressContentEditableWarning
+                              onBlur={(e) => {
+                                if (isEditingReasoning) {
+                                  const updatedQuestions = questions.map(q =>
+                                    q.question_number === question.question_number
+                                      ? { ...q, feedback: e.currentTarget.textContent || '' }
+                                      : q
+                                  );
+                                  setQuestions(updatedQuestions);
+                                  setIsEditingReasoning(false);
+                                  if (isReviewMode) {
+                                    setHasUnsavedChanges(true);
+                                  }
+                                }
+                              }}
+                              onClick={() => {
+                                if (isEditingReasoning) {
+                                  // Keep focus when editing
+                                }
+                              }}
+                              className={`text-sm text-stone-600 leading-relaxed break-words overflow-wrap-anywhere ${
+                                isEditingReasoning ? 'outline-none cursor-text' : ''
+                              }`}
+                            >
+                              {question.feedback}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Scoring Breakdown Capsule */}
+                    {question.scoring_breakdown && question.scoring_breakdown.length > 0 && (
+                      <div className="border border-stone-200 rounded-xl overflow-hidden bg-white shadow-2xl">
+                        <button
+                          onClick={() => setKeepScoringOpen(!keepScoringOpen)}
+                          className="w-full px-4 py-3 flex items-center justify-between bg-gradient-to-r from-[#ebe3dd] to-[#e0d2c8] hover:from-[#e0d2c8] hover:to-[#d5c4b8] transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#a89178] to-[#9d8066] flex items-center justify-center">
+                              <span className="text-white text-xs font-bold">✓</span>
+                            </div>
+                            <span className="font-bold text-sm text-stone-900">Scoring Breakdown</span>
+                          </div>
+                          <svg
+                            className={`w-5 h-5 text-stone-600 transition-transform duration-300 ${keepScoringOpen ? 'rotate-90' : ''}`}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </button>
+                        <div
+                          className={`transition-all duration-300 ease-in-out ${
+                            keepScoringOpen ? 'max-h-[350px] overflow-y-auto' : 'max-h-0 overflow-hidden'
+                          }`}
+                        >
+                          <div className="p-4 bg-[#ebe3dd] animate-in slide-in-from-right duration-300 space-y-3">
+                            {question.scoring_breakdown.map((item, idx) => (
+                              <div key={idx} className={`border rounded-lg p-3 ${item.mark_awarded ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                                <p className="text-sm text-stone-600 leading-relaxed break-words overflow-wrap-anywhere">
+                                  {item.reasoning}
+                                </p>
+                                <p className={`text-xs font-semibold mt-2 ${item.mark_awarded ? 'text-green-700' : 'text-red-700'}`}>
+                                  {item.mark_awarded ? '✓ Mark Awarded' : '✗ Mark Not Awarded'}
+                                </p>
+                              </div>
+                            ))}
+
+                            {/* Mistakes Section within Scoring */}
+                            {question.mistakes_made && question.mistakes_made.length > 0 && (
+                              <div className="pt-3 border-t border-stone-200">
+                                <h5 className="text-xs font-bold text-red-700 mb-2">Mistakes Identified</h5>
+                                <div className="space-y-2">
+                                  {question.mistakes_made.map((mistake, idx) => (
+                                    <div key={idx} className="bg-red-50 border border-red-200 rounded-lg p-3">
+                                      <p className="text-xs font-bold text-red-700 mb-1 break-words">{mistake.mistake_type}</p>
+                                      <p className="text-sm text-stone-600 mb-2 break-words overflow-wrap-anywhere">{mistake.mistake_description}</p>
+                                      {mistake.lacking_competencies && mistake.lacking_competencies.length > 0 && (
+                                        <div className="mt-2">
+                                          <p className="text-xs font-semibold text-stone-700 mb-1">Lacking Competencies:</p>
+                                          <ul className="list-disc list-inside text-xs text-stone-600">
+                                            {mistake.lacking_competencies.map((comp, i) => (
+                                              <li key={i}>{comp}</li>
+                                            ))}
+                                          </ul>
+                                        </div>
+                                      )}
+                                      <p className="text-xs text-red-600 mt-2 font-semibold">
+                                        Marks Lost: {mistake.marks_lost}
+                                      </p>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Marks Suggestion - Horizontal scroll */}
+                    <div className="w-full flex justify-center px-4">
+                      <div
+                        className="flex gap-3 overflow-x-auto pb-2 scrollbar-hidden"
+                        style={{
+                          maxWidth: '174px',
+                          scrollSnapType: 'x mandatory'
+                        }}
+                      >
+                        {generateMarkSuggestions(question.marks_available, question.score_awarded).map((mark) => (
+                          <button
+                            key={mark}
+                            onClick={() => {
+                              const updatedQuestions = questions.map(q =>
+                                q.question_number === activeQuestionNumber
+                                  ? { ...q, score_awarded: mark }
+                                  : q
+                              );
+                              setQuestions(updatedQuestions);
+                              if (isReviewMode) {
+                                setHasUnsavedChanges(true);
+                              }
+                            }}
+                            className="flex-shrink-0 bg-gradient-to-br from-[#ebe3dd] to-[#e0d2c8] hover:from-[#e0d2c8] hover:to-[#d5c4b8] border-2 border-[#cbb8a8] hover:border-[#b59984] rounded-full font-bold text-stone-700 hover:text-stone-900 transition-all duration-200 shadow-md hover:shadow-lg text-base flex items-center justify-center"
+                            style={{
+                              width: '50px',
+                              height: '50px',
+                              scrollSnapAlign: 'start'
+                            }}
+                          >
+                            {mark}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Verify Icons - Below Marks Options */}
+                    <div className="w-full mt-4 flex justify-center gap-6">
+                      <div className="group relative flex flex-col items-center">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleVerifyQuestion(e, activeQuestionNumber);
+                          }}
+                          className="transition-all duration-200 flex items-center justify-center"
+                        >
+                          <CheckCircle
+                            className={`w-8 h-8 transition-all duration-200 ${
+                              question.is_verified
+                                ? 'text-green-500 scale-125'
+                                : 'text-gray-400 hover:text-green-500 hover:scale-110'
+                            }`}
+                            fill={question.is_verified ? "currentColor" : "none"}
+                          />
+                        </button>
+                        <span className="absolute -bottom-6 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-xs font-medium text-stone-700 whitespace-nowrap bg-white px-2 py-1 rounded shadow-md">
+                          Mark as Verified
+                        </span>
+                      </div>
+
+                      <div className="group relative flex flex-col items-center">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Set marks to 0 and verify the question
+                            const updatedQuestions = questions.map(q =>
+                              q.question_number === activeQuestionNumber
+                                ? { ...q, score_awarded: 0, is_verified: true }
+                                : q
+                            );
+                            setQuestions(updatedQuestions);
+
+                            // Mark as having unsaved changes if in review mode
+                            if (isReviewMode) {
+                              setHasUnsavedChanges(true);
+                            }
+
+                            // Scroll to next unverified question
+                            setTimeout(() => {
+                              const unverifiedQuestions = updatedQuestions.filter(q => !q.is_verified);
+
+                              if (unverifiedQuestions.length > 0) {
+                                const skippedQuestions = unverifiedQuestions.filter(q => q.question_number < activeQuestionNumber);
+
+                                let nextQuestionNumber = null;
+
+                                if (skippedQuestions.length > 0) {
+                                  nextQuestionNumber = skippedQuestions[0].question_number;
+                                } else {
+                                  const nextQuestions = unverifiedQuestions.filter(q => q.question_number > activeQuestionNumber);
+                                  if (nextQuestions.length > 0) {
+                                    nextQuestionNumber = nextQuestions[0].question_number;
+                                  } else {
+                                    nextQuestionNumber = unverifiedQuestions[0].question_number;
+                                  }
+                                }
+
+                                if (nextQuestionNumber) {
+                                  const badgeElement = document.getElementById(`badge-q${nextQuestionNumber}`);
+                                  if (badgeElement) {
+                                    badgeElement.scrollIntoView({
+                                      behavior: 'smooth',
+                                      block: 'center',
+                                      inline: 'center'
+                                    });
+                                  }
+                                }
+                              }
+                            }, 300);
+                          }}
+                          className="transition-all duration-200 flex items-center justify-center"
+                        >
+                          <X
+                            className="w-8 h-8 transition-all duration-200 text-red-500 hover:text-red-700 hover:scale-110"
+                          />
+                        </button>
+                        <span className="absolute -bottom-6 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-xs font-medium text-stone-700 whitespace-nowrap bg-white px-2 py-1 rounded shadow-md">
+                          Mark as Zero
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
+        </div>
+      )}
+
       {/* Running Total - Fixed Center Right (Outside main container) */}
-      <div className="fixed top-2/3 right-6 -translate-y-2/3 z-[9997] pointer-events-none">
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white px-6 py-4 rounded-2xl shadow-2xl border-2 border-blue-400 pointer-events-auto">
-          <div className="text-xs font-semibold text-blue-100 uppercase tracking-wide mb-1">Running Total</div>
+      <div className={`fixed top-1/4 left-6 -translate-y-1/4 z-[9997] pointer-events-none transition-all duration-300 ${showWelcomeModal || showPreferencesModal ? 'blur-sm' : ''}`}>
+        <div className="bg-gradient-to-br from-[#d5c4b8] to-[#c0a896] text-white px-6 py-4 rounded-2xl shadow-2xl border-2 border-[#e0d2c8] pointer-events-auto">
+          <div className="text-xs font-semibold text-white uppercase tracking-wide mb-1">Running Total</div>
           <div className="flex items-baseline gap-2">
             <span className="text-3xl font-bold">{totalScore}</span>
-            <span className="text-lg font-medium text-blue-100">/</span>
-            <span className="text-2xl font-semibold text-blue-100">{totalMarksAvailable}</span>
+            <span className="text-lg font-medium text-white">/</span>
+            <span className="text-2xl font-semibold text-white">{totalMarksAvailable}</span>
           </div>
-          <div className="text-xs text-blue-100 mt-2">
+          <div className="text-xs text-white mt-2">
             {verifiedQuestionsCount} of {questions.length} verified
           </div>
         </div>
@@ -955,7 +1669,7 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
         />
 
         {/* Modal */}
-        <div className="fixed bottom-4 left-4 w-full md:w-[500px] max-w-[calc(100vw-2rem)] h-[70vh] max-h-[calc(100vh-2rem)] bg-white rounded-2xl shadow-2xl z-[9999] animate-in slide-in-from-bottom-8 duration-300">
+        <div className="fixed bottom-4 right-4 w-full md:w-[500px] max-w-[calc(100vw-2rem)] h-[70vh] max-h-[calc(100vh-2rem)] bg-white rounded-2xl shadow-2xl z-[9999] animate-in slide-in-from-right duration-300">
               {/* Modal Header */}
               <div className="flex items-center justify-between p-6 border-b border-stone-200">
                 <h3 className="text-lg font-bold text-stone-900">
@@ -988,10 +1702,19 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
                                 min="0"
                                 max={editedMarksAvailable}
                                 value={editedScoreAwarded}
-                                onChange={(e) => setEditedScoreAwarded(Number(e.target.value))}
-                                className="w-20 text-center text-sm font-bold text-stone-700 bg-stone-50 border border-stone-300 focus:border-stone-600 focus:ring-1 focus:ring-stone-600 focus:outline-none px-2 py-1.5 rounded [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                                onChange={(e) => handleScoreAwardedChange(e.target.value)}
+                                className={`w-20 text-center text-sm font-bold bg-stone-50 border focus:ring-1 focus:outline-none px-2 py-1.5 rounded [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield] ${
+                                  editedScoreAwarded > editedMarksAvailable
+                                    ? 'border-red-300 text-red-700 focus:border-red-600 focus:ring-red-600'
+                                    : 'border-stone-300 text-stone-700 focus:border-stone-600 focus:ring-stone-600'
+                                }`}
                                 style={{ MozAppearance: 'textfield' }}
+                                aria-label="Score awarded"
+                                aria-invalid={editedScoreAwarded > editedMarksAvailable}
                               />
+                              {editedScoreAwarded > editedMarksAvailable && (
+                                <p className="text-xs text-red-600 mt-1">Score cannot exceed {editedMarksAvailable}</p>
+                              )}
                             </div>
                             <div className="flex flex-col gap-1">
                               <label className="text-xs font-medium text-stone-600">Total Marks:</label>
@@ -1000,9 +1723,10 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
                                 type="number"
                                 min="0"
                                 value={editedMarksAvailable}
-                                onChange={(e) => setEditedMarksAvailable(Number(e.target.value))}
+                                onChange={(e) => handleMarksAvailableChange(e.target.value)}
                                 className="w-20 text-center text-sm font-bold text-stone-700 bg-stone-50 border border-stone-300 focus:border-amber-600 focus:ring-1 focus:ring-amber-600 focus:outline-none px-2 py-1.5 rounded [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
                                 style={{ MozAppearance: 'textfield' }}
+                                aria-label="Total marks available"
                               />
                             </div>
                           </div>
@@ -1344,6 +2068,40 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
                   </p>
                 </div>
 
+                {/* Teacher Remarks Section */}
+                <div className="mb-6">
+                  <label className="block mb-2">
+                    <span className="text-sm font-semibold text-stone-700 flex items-center gap-2">
+                      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                      </svg>
+                      Remarks for Student (Optional)
+                    </span>
+                    <span className="text-xs text-stone-500 ml-6">Share feedback, encouragement, or areas for improvement</span>
+                  </label>
+                  <textarea
+                    value={teacherRemarks}
+                    onChange={(e) => setTeacherRemarks(e.target.value)}
+                    placeholder="Example: Great work on question 3! Pay attention to calculation steps in question 5..."
+                    rows={4}
+                    maxLength={500}
+                    className="w-full px-4 py-3 border-2 border-stone-200 rounded-xl focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all resize-none text-sm text-stone-700 placeholder-stone-400"
+                  />
+                  <div className="flex items-center justify-between mt-2">
+                    <span className="text-xs text-stone-500">
+                      {teacherRemarks.length}/500 characters
+                    </span>
+                    {teacherRemarks.length > 0 && (
+                      <button
+                        onClick={() => setTeacherRemarks('')}
+                        className="text-xs text-red-600 hover:text-red-700 font-medium"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
+
                 {/* Action Buttons */}
                 <div className="flex flex-col gap-3">
                   <div className="flex gap-3">
@@ -1388,6 +2146,304 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
                     </div>
                   )}
                 </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Welcome Modal for Non-Evaluated Papers */}
+      {showWelcomeModal && (
+        <>
+          {/* Backdrop */}
+          <div className="fixed inset-0 bg-black/40 z-[10000] animate-in fade-in duration-300" />
+
+          {/* Modal */}
+          <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full p-8 animate-in zoom-in duration-500 relative overflow-hidden">
+              {/* Decorative gradient background */}
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 opacity-50" />
+
+              {/* Content */}
+              <div className="relative z-10">
+                {/* Welcome Icon */}
+                <div className="flex justify-center mb-6">
+                  <div className="w-20 h-20 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center shadow-lg">
+                    <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                </div>
+
+                {/* Main Heading */}
+                <h2 className="text-3xl font-bold text-center mb-3 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  Welcome to Answer Sheet Evaluation
+                </h2>
+
+                {/* Subheading */}
+                <p className="text-lg text-center text-stone-600 mb-6 font-semibold">
+                  Let's review {studentName}'s submission
+                </p>
+
+                {/* Instructions */}
+                <div className="bg-white rounded-2xl p-6 mb-6 border-2 border-blue-100 shadow-sm">
+                  <h3 className="text-lg font-bold text-stone-900 mb-4 flex items-center gap-2">
+                    <span className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-sm">
+                      i
+                    </span>
+                    What you need to do:
+                  </h3>
+                  <ul className="space-y-4">
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-white text-xs font-bold">1</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-stone-800">Review AI-Generated Evaluations</p>
+                        <p className="text-sm text-stone-600">Each question has been automatically evaluated. Review the scores, reasoning, and feedback provided by AI.</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 bg-gradient-to-br from-blue-400 to-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-white text-xs font-bold">2</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-stone-800">Adjust Scores (If Needed)</p>
+                        <p className="text-sm text-stone-600">Use the mark suggestions or click the edit button to modify scores. Update partial marks breakdown for better insights.</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 bg-gradient-to-br from-amber-400 to-amber-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-white text-xs font-bold">3</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-stone-800">Verify Each Question</p>
+                        <p className="text-sm text-stone-600">Click the checkmark (✓) icon to verify a question. The system will automatically move to the next unverified question.</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 bg-gradient-to-br from-purple-400 to-purple-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-white text-xs font-bold">4</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-stone-800">Complete the Review</p>
+                        <p className="text-sm text-stone-600">Once all questions are verified, your evaluation will be automatically submitted and marked as "Graded".</p>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Quick Tips */}
+                <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 mb-6">
+                  <h4 className="text-sm font-bold text-amber-900 mb-2 flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                    Quick Tips
+                  </h4>
+                  <ul className="text-xs text-amber-900 space-y-1 list-disc list-inside">
+                    <li>Click on any badge on the left side of the PDF to view question details</li>
+                    <li>Use the reasoning panel on the right to understand AI's evaluation logic</li>
+                    <li>Navigate between submissions using ← → arrow keys</li>
+                    <li>Gray badges indicate unverified questions; colored badges show verified ones</li>
+                  </ul>
+                </div>
+
+                {/* Action Button */}
+                <button
+                  onClick={() => {
+                    setShowWelcomeModal(false);
+                    setShowPreferencesModal(true);
+                  }}
+                  className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
+                >
+                  Got it! Let's Start Reviewing
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Preferences Modal */}
+      {showPreferencesModal && (
+        <>
+          {/* Backdrop */}
+          <div className={`fixed inset-0 bg-black/40 z-[10000] ${isMinimizing ? 'animate-out fade-out duration-500' : 'animate-in fade-in duration-300'}`} />
+
+          {/* Modal */}
+          <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4">
+            <div className={`bg-white rounded-3xl shadow-2xl max-w-lg w-full p-8 relative overflow-hidden ${isMinimizing ? 'minimizing' : 'animate-in zoom-in duration-500'}`}>
+              {/* Decorative gradient background */}
+              <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-blue-50 to-cyan-50 opacity-50" />
+
+              {/* Content */}
+              <div className="relative z-10">
+                {/* Settings Icon */}
+                <div className="flex justify-center mb-6">
+                  <div className="w-20 h-20 bg-gradient-to-br from-indigo-400 to-blue-500 rounded-full flex items-center justify-center shadow-lg">
+                    <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </div>
+                </div>
+
+                {/* Main Heading */}
+                <h2 className="text-2xl font-bold text-center mb-2 bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">
+                  Set Your Preferences
+                </h2>
+
+                {/* Subheading */}
+                <p className="text-sm text-center text-stone-600 mb-6">
+                  Customize which panel stays open while reviewing questions
+                </p>
+
+                {/* Preferences Options */}
+                <div className="space-y-4 mb-8">
+                  {/* Question Panel */}
+                  <div className="bg-gradient-to-r from-purple-50 to-purple-100 border-2 border-purple-200 rounded-xl p-4 hover:border-purple-300 transition-all">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center">
+                          <span className="text-white text-sm font-bold">Q</span>
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-bold text-stone-900">Keep Question Open</h3>
+                          <p className="text-xs text-stone-600">Always show the question text</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          const newValue = !keepQuestionOpen;
+                          setKeepQuestionOpen(newValue);
+                          if (newValue) {
+                            setKeepAIReasoningOpen(false);
+                            setKeepScoringOpen(false);
+                          }
+                        }}
+                        className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
+                          keepQuestionOpen ? 'bg-purple-600' : 'bg-stone-300'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                            keepQuestionOpen ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* AI Reasoning Panel */}
+                  <div className="bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-200 rounded-xl p-4 hover:border-blue-300 transition-all">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                          <span className="text-white text-sm font-bold">AI</span>
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-bold text-stone-900">Keep AI Reasoning Open</h3>
+                          <p className="text-xs text-stone-600">Always show AI's evaluation reasoning</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          const newValue = !keepAIReasoningOpen;
+                          setKeepAIReasoningOpen(newValue);
+                          if (newValue) {
+                            setKeepQuestionOpen(false);
+                            setKeepScoringOpen(false);
+                          }
+                        }}
+                        className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
+                          keepAIReasoningOpen ? 'bg-blue-600' : 'bg-stone-300'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                            keepAIReasoningOpen ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Scoring Breakdown Panel */}
+                  <div className="bg-gradient-to-r from-green-50 to-green-100 border-2 border-green-200 rounded-xl p-4 hover:border-green-300 transition-all">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                          <span className="text-white text-sm font-bold">✓</span>
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-bold text-stone-900">Keep Scoring Breakdown Open</h3>
+                          <p className="text-xs text-stone-600">Always show detailed scoring criteria</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          const newValue = !keepScoringOpen;
+                          setKeepScoringOpen(newValue);
+                          if (newValue) {
+                            setKeepQuestionOpen(false);
+                            setKeepAIReasoningOpen(false);
+                          }
+                        }}
+                        className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
+                          keepScoringOpen ? 'bg-green-600' : 'bg-stone-300'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                            keepScoringOpen ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Info Note */}
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+                  <p className="text-xs text-blue-800 text-center">
+                    <strong>Note:</strong> You can change these preferences anytime using the controls in the student details section
+                  </p>
+                </div>
+
+                {/* Action Button */}
+                <button
+                  onClick={() => {
+                    setIsMinimizing(true);
+                    // Trigger pulse and glow animation on switches
+                    const switches = document.getElementById('preference-switches');
+                    const switchButtons = switches?.querySelectorAll('button');
+
+                    if (switches) {
+                      switches.classList.add('switch-pulse');
+                    }
+
+                    // Add glow effect to each switch button
+                    switchButtons?.forEach(btn => {
+                      btn.classList.add('switch-glow');
+                    });
+
+                    // Close modal after animation
+                    setTimeout(() => {
+                      setShowPreferencesModal(false);
+                      setIsMinimizing(false);
+                      if (switches) {
+                        switches.classList.remove('switch-pulse');
+                      }
+                      switchButtons?.forEach(btn => {
+                        btn.classList.remove('switch-glow');
+                      });
+                    }, 600);
+                  }}
+                  className="w-full bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-600 hover:to-blue-600 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
+                >
+                  Start Reviewing
+                </button>
               </div>
             </div>
           </div>
@@ -1462,6 +2518,182 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
             </div>
           </div>
         </>
+      )}
+
+      {/* FAQ Button - Bottom Left */}
+      <button
+        onClick={() => {
+          if (showFAQ) {
+            // Start closing animation
+            setIsFAQClosing(true);
+            setTimeout(() => {
+              setShowFAQ(false);
+              setIsFAQClosing(false);
+            }, 500); // Match animation duration
+          } else {
+            setShowFAQ(true);
+          }
+        }}
+        className="fixed bottom-8 left-8 z-[9999] bg-gradient-to-br from-[#c0a896] to-[#b59984] hover:from-[#b59984] hover:to-[#a89178] text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110"
+        title="FAQ - Help"
+      >
+        <span className="text-2xl font-bold">?</span>
+      </button>
+
+      {/* FAQ Capsules Panel - Bottom Left */}
+      {showFAQ && (
+        <div
+          className="fixed left-8 bottom-28 w-[500px] z-[9998] space-y-3 origin-bottom-left"
+          style={{
+            animation: isFAQClosing ? 'faqSlideOut 0.5s ease-out forwards' : 'faqSlideIn 0.5s ease-out forwards'
+          }}
+        >
+          {/* FAQ 1 - How to complete review */}
+          <div className="border border-stone-200 rounded-xl overflow-hidden bg-white shadow-2xl" style={{animation: isFAQClosing ? 'faqSlideOut 0.5s ease-out forwards' : 'faqSlideIn 0.5s ease-out forwards', animationDelay: isFAQClosing ? '0s' : '0.1s', opacity: isFAQClosing ? 1 : 0}}>
+            <button
+              onClick={() => setExpandedFAQs(prev =>
+                prev.includes(1) ? prev.filter(id => id !== 1) : [...prev, 1]
+              )}
+              className="w-full px-4 py-3 flex items-center justify-between bg-gradient-to-r from-[#ebe3dd] to-[#e0d2c8] hover:from-[#e0d2c8] hover:to-[#d5c4b8] transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#c0a896] to-[#b59984] flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">?</span>
+                </div>
+                <span className="font-bold text-sm text-stone-900">How to complete review?</span>
+              </div>
+              <svg className={`w-5 h-5 text-stone-600 transition-transform duration-300 ${expandedFAQs.includes(1) ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+            <div className={`transition-all duration-300 ease-in-out ${expandedFAQs.includes(1) ? 'max-h-96 overflow-y-auto' : 'max-h-0 overflow-hidden'}`}>
+              <div className="p-4 bg-[#ebe3dd] animate-in slide-in-from-left duration-300">
+                <div className="text-sm text-stone-600 space-y-2">
+                  <p><strong>Step 1:</strong> Click on a badge (marks indicator) on the left side of the PDF to view question details in the capsules on the right.</p>
+                  <p><strong>Step 2:</strong> Review the question text, AI reasoning, and scoring breakdown in the capsules.</p>
+                  <p><strong>Step 3:</strong> Edit marks if needed by double-clicking the badge, or use the scoring capsule to adjust marks.</p>
+                  <p><strong>Step 4:</strong> Click the green checkmark (✓) in the scoring capsule to verify the question.</p>
+                  <p><strong>Step 5:</strong> Repeat for all questions. Once all are verified, you'll see a completion modal.</p>
+                  <p><strong>Tip:</strong> Use arrow keys (↑/↓) to navigate between questions quickly!</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* FAQ 2 - How to edit marks */}
+          <div className="border border-stone-200 rounded-xl overflow-hidden bg-white shadow-2xl" style={{animation: isFAQClosing ? 'faqSlideOut 0.5s ease-out forwards' : 'faqSlideIn 0.5s ease-out forwards', animationDelay: isFAQClosing ? '0s' : '0.15s', opacity: isFAQClosing ? 1 : 0}}>
+            <button
+              onClick={() => setExpandedFAQs(prev =>
+                prev.includes(2) ? prev.filter(id => id !== 2) : [...prev, 2]
+              )}
+              className="w-full px-4 py-3 flex items-center justify-between bg-gradient-to-r from-[#ebe3dd] to-[#e0d2c8] hover:from-[#e0d2c8] hover:to-[#d5c4b8] transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#c0a896] to-[#b59984] flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">?</span>
+                </div>
+                <span className="font-bold text-sm text-stone-900">How to edit marks quickly?</span>
+              </div>
+              <svg className={`w-5 h-5 text-stone-600 transition-transform duration-300 ${expandedFAQs.includes(2) ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+            <div className={`transition-all duration-300 ease-in-out ${expandedFAQs.includes(2) ? 'max-h-96 overflow-y-auto' : 'max-h-0 overflow-hidden'}`}>
+              <div className="p-4 bg-[#ebe3dd] animate-in slide-in-from-left duration-300">
+                <div className="text-sm text-stone-600 space-y-2">
+                  <p><strong>Double-click badge:</strong> Double-click any badge to edit the score (numerator) directly.</p>
+                  <p><strong>Use capsules:</strong> Click on suggested marks in the scoring capsule for quick selection.</p>
+                  <p><strong>Set to zero:</strong> Click the red X button to instantly set marks to 0 and verify.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* FAQ 3 - Badge colors */}
+          <div className="border border-stone-200 rounded-xl overflow-hidden bg-white shadow-2xl" style={{animation: isFAQClosing ? 'faqSlideOut 0.5s ease-out forwards' : 'faqSlideIn 0.5s ease-out forwards', animationDelay: isFAQClosing ? '0s' : '0.2s', opacity: isFAQClosing ? 1 : 0}}>
+            <button
+              onClick={() => setExpandedFAQs(prev =>
+                prev.includes(3) ? prev.filter(id => id !== 3) : [...prev, 3]
+              )}
+              className="w-full px-4 py-3 flex items-center justify-between bg-gradient-to-r from-[#ebe3dd] to-[#e0d2c8] hover:from-[#e0d2c8] hover:to-[#d5c4b8] transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#c0a896] to-[#b59984] flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">?</span>
+                </div>
+                <span className="font-bold text-sm text-stone-900">What do the badge colors mean?</span>
+              </div>
+              <svg className={`w-5 h-5 text-stone-600 transition-transform duration-300 ${expandedFAQs.includes(3) ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+            <div className={`transition-all duration-300 ease-in-out ${expandedFAQs.includes(3) ? 'max-h-96 overflow-y-auto' : 'max-h-0 overflow-hidden'}`}>
+              <div className="p-4 bg-[#ebe3dd] animate-in slide-in-from-left duration-300">
+                <div className="text-sm text-stone-600 space-y-2">
+                  <p><strong className="text-gray-600">Gray:</strong> Question not yet verified</p>
+                  <p><strong className="text-green-600">Green:</strong> Verified with full marks</p>
+                  <p><strong className="text-yellow-600">Yellow:</strong> Verified with partial marks</p>
+                  <p><strong className="text-red-600">Red:</strong> Verified with zero marks</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* FAQ 4 - Edit reasoning */}
+          <div className="border border-stone-200 rounded-xl overflow-hidden bg-white shadow-2xl" style={{animation: isFAQClosing ? 'faqSlideOut 0.5s ease-out forwards' : 'faqSlideIn 0.5s ease-out forwards', animationDelay: isFAQClosing ? '0s' : '0.25s', opacity: isFAQClosing ? 1 : 0}}>
+            <button
+              onClick={() => setExpandedFAQs(prev =>
+                prev.includes(4) ? prev.filter(id => id !== 4) : [...prev, 4]
+              )}
+              className="w-full px-4 py-3 flex items-center justify-between bg-gradient-to-r from-[#ebe3dd] to-[#e0d2c8] hover:from-[#e0d2c8] hover:to-[#d5c4b8] transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#c0a896] to-[#b59984] flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">?</span>
+                </div>
+                <span className="font-bold text-sm text-stone-900">Can I edit the AI reasoning?</span>
+              </div>
+              <svg className={`w-5 h-5 text-stone-600 transition-transform duration-300 ${expandedFAQs.includes(4) ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+            <div className={`transition-all duration-300 ease-in-out ${expandedFAQs.includes(4) ? 'max-h-96 overflow-y-auto' : 'max-h-0 overflow-hidden'}`}>
+              <div className="p-4 bg-[#ebe3dd] animate-in slide-in-from-left duration-300">
+                <p className="text-sm text-stone-600">Yes! Click the pencil icon (✏️) in the Reasoning capsule header to edit the reasoning text. This is useful if you want to add notes or clarify the AI's explanation.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* FAQ 5 - Keyboard shortcuts */}
+          <div className="border border-stone-200 rounded-xl overflow-hidden bg-white shadow-2xl" style={{animation: isFAQClosing ? 'faqSlideOut 0.5s ease-out forwards' : 'faqSlideIn 0.5s ease-out forwards', animationDelay: isFAQClosing ? '0s' : '0.3s', opacity: isFAQClosing ? 1 : 0}}>
+            <button
+              onClick={() => setExpandedFAQs(prev =>
+                prev.includes(5) ? prev.filter(id => id !== 5) : [...prev, 5]
+              )}
+              className="w-full px-4 py-3 flex items-center justify-between bg-gradient-to-r from-[#ebe3dd] to-[#e0d2c8] hover:from-[#e0d2c8] hover:to-[#d5c4b8] transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#c0a896] to-[#b59984] flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">?</span>
+                </div>
+                <span className="font-bold text-sm text-stone-900">What are the keyboard shortcuts?</span>
+              </div>
+              <svg className={`w-5 h-5 text-stone-600 transition-transform duration-300 ${expandedFAQs.includes(5) ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+            <div className={`transition-all duration-300 ease-in-out ${expandedFAQs.includes(5) ? 'max-h-96 overflow-y-auto' : 'max-h-0 overflow-hidden'}`}>
+              <div className="p-4 bg-[#ebe3dd] animate-in slide-in-from-left duration-300">
+                <div className="text-sm text-stone-600 space-y-2">
+                  <p><strong>↑ Up Arrow:</strong> Navigate to previous question</p>
+                  <p><strong>↓ Down Arrow:</strong> Navigate to next question</p>
+                  <p><strong>← Left Arrow:</strong> Go to previous submission</p>
+                  <p><strong>→ Right Arrow:</strong> Go to next submission</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );
