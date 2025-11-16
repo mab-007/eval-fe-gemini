@@ -354,33 +354,31 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
       setHasUnsavedChanges(true);
     }
 
-    // If question was just verified (not unverified), scroll to next unverified question
+    // If question was just verified (not unverified), navigate to next unverified question
     if (!wasVerified) {
-      // Calculate next unverified question from the updated list
       const unverifiedQuestions = updatedQuestions.filter(q => !q.is_verified);
 
       if (unverifiedQuestions.length > 0) {
-        // Check if there are any skipped questions (unverified questions before the current one)
-        const skippedQuestions = unverifiedQuestions.filter(q => q.question_number < questionNumber);
-
         let nextQuestionNumber = null;
 
-        if (skippedQuestions.length > 0) {
-          // Return to first skipped question
-          nextQuestionNumber = skippedQuestions[0].question_number;
+        // Priority 1: Find next unverified question AFTER current one
+        const nextQuestions = unverifiedQuestions.filter(q => q.question_number > questionNumber);
+        if (nextQuestions.length > 0) {
+          nextQuestionNumber = nextQuestions[0].question_number;
         } else {
-          // Otherwise, go to next unverified question in sequence
-          const nextQuestions = unverifiedQuestions.filter(q => q.question_number > questionNumber);
-          if (nextQuestions.length > 0) {
-            nextQuestionNumber = nextQuestions[0].question_number;
+          // Priority 2: All questions after current are verified, go back to skipped ones
+          const skippedQuestions = unverifiedQuestions.filter(q => q.question_number < questionNumber);
+          if (skippedQuestions.length > 0) {
+            nextQuestionNumber = skippedQuestions[0].question_number;
           } else {
-            // Loop back to first unverified
+            // Fallback: Loop to first unverified
             nextQuestionNumber = unverifiedQuestions[0].question_number;
           }
         }
 
-        // Scroll to the next unverified badge
+        // Navigate to the next unverified question
         if (nextQuestionNumber) {
+          setActiveQuestionNumber(nextQuestionNumber);
           setTimeout(() => {
             const badgeElement = document.getElementById(`badge-q${nextQuestionNumber}`);
             if (badgeElement) {
@@ -397,6 +395,9 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
   };
 
   const handleMilestoneClick = (question: QuestionSummary) => {
+    // Set active question (same as badge click)
+    setActiveQuestionNumber(question.question_number);
+
     // Find the badge element and scroll to it
     const badgeElement = document.getElementById(`badge-q${question.question_number}`);
     if (badgeElement) {
@@ -617,10 +618,15 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
     return () => clearTimeout(timer);
   }, [activeQuestionNumber]);
 
-  // Set active question to first unverified question
+  // Set active question to first unverified question only on initial load or if current question doesn't exist
   useEffect(() => {
-    const firstUnverified = findFirstUnverifiedQuestion();
-    setActiveQuestionNumber(firstUnverified);
+    // Only auto-set if there's no active question or if the active question no longer exists
+    const currentQuestionExists = questions.some(q => q.question_number === activeQuestionNumber);
+
+    if (!activeQuestionNumber || !currentQuestionExists) {
+      const firstUnverified = findFirstUnverifiedQuestion();
+      setActiveQuestionNumber(firstUnverified);
+    }
   }, [questions]);
 
   // Reset capsules animation when active question changes
@@ -693,6 +699,115 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
             badgeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
         }
+      } else if (event.key === 'Enter') {
+        event.preventDefault();
+        // Mark question as verified and navigate to next unverified
+        if (!activeQuestionNumber) return;
+
+        const currentQuestion = questions.find(q => q.question_number === activeQuestionNumber);
+
+        // Only verify if not already verified
+        if (currentQuestion && !currentQuestion.is_verified) {
+          const updatedQuestions = questions.map(q =>
+            q.question_number === activeQuestionNumber
+              ? { ...q, is_verified: true }
+              : q
+          );
+          setQuestions(updatedQuestions);
+
+          // Mark as having unsaved changes if in review mode
+          if (isReviewMode) {
+            setHasUnsavedChanges(true);
+          }
+
+          // Navigate to next unverified question
+          setTimeout(() => {
+            const unverifiedQuestions = updatedQuestions.filter(q => !q.is_verified);
+
+            if (unverifiedQuestions.length > 0 && activeQuestionNumber) {
+              let nextQuestionNumber = null;
+
+              // Priority 1: Find next unverified question AFTER current one
+              const nextQuestions = unverifiedQuestions.filter(q => q.question_number > activeQuestionNumber);
+              if (nextQuestions.length > 0) {
+                nextQuestionNumber = nextQuestions[0].question_number;
+              } else {
+                // Priority 2: All questions after current are verified, go back to skipped ones
+                const skippedQuestions = unverifiedQuestions.filter(q => q.question_number < activeQuestionNumber);
+                if (skippedQuestions.length > 0) {
+                  nextQuestionNumber = skippedQuestions[0].question_number;
+                } else {
+                  // Fallback: Loop to first unverified
+                  nextQuestionNumber = unverifiedQuestions[0].question_number;
+                }
+              }
+
+              if (nextQuestionNumber) {
+                setActiveQuestionNumber(nextQuestionNumber);
+                const badgeElement = document.getElementById(`badge-q${nextQuestionNumber}`);
+                if (badgeElement) {
+                  badgeElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center',
+                    inline: 'center'
+                  });
+                }
+              }
+            }
+          }, 300);
+        }
+      } else if (event.key === 'Backspace' || event.key === 'Delete') {
+        event.preventDefault();
+        // Set marks to 0, verify, and navigate to next unverified
+        if (!activeQuestionNumber) return;
+
+        const updatedQuestions = questions.map(q =>
+          q.question_number === activeQuestionNumber
+            ? { ...q, score_awarded: 0, is_verified: true }
+            : q
+        );
+        setQuestions(updatedQuestions);
+
+        // Mark as having unsaved changes if in review mode
+        if (isReviewMode) {
+          setHasUnsavedChanges(true);
+        }
+
+        // Navigate to next unverified question
+        setTimeout(() => {
+          const unverifiedQuestions = updatedQuestions.filter(q => !q.is_verified);
+
+          if (unverifiedQuestions.length > 0 && activeQuestionNumber) {
+            let nextQuestionNumber = null;
+
+            // Priority 1: Find next unverified question AFTER current one
+            const nextQuestions = unverifiedQuestions.filter(q => q.question_number > activeQuestionNumber);
+            if (nextQuestions.length > 0) {
+              nextQuestionNumber = nextQuestions[0].question_number;
+            } else {
+              // Priority 2: All questions after current are verified, go back to skipped ones
+              const skippedQuestions = unverifiedQuestions.filter(q => q.question_number < activeQuestionNumber);
+              if (skippedQuestions.length > 0) {
+                nextQuestionNumber = skippedQuestions[0].question_number;
+              } else {
+                // Fallback: Loop to first unverified
+                nextQuestionNumber = unverifiedQuestions[0].question_number;
+              }
+            }
+
+            if (nextQuestionNumber) {
+              setActiveQuestionNumber(nextQuestionNumber);
+              const badgeElement = document.getElementById(`badge-q${nextQuestionNumber}`);
+              if (badgeElement) {
+                badgeElement.scrollIntoView({
+                  behavior: 'smooth',
+                  block: 'center',
+                  inline: 'center'
+                });
+              }
+            }
+          }
+        }, 300);
       }
     };
 
@@ -708,7 +823,10 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
     showWelcomeModal,
     showPreferencesModal,
     activeQuestionNumber,
-    questions
+    questions,
+    setQuestions,
+    isReviewMode,
+    setHasUnsavedChanges
   ]);
 
   return (
@@ -726,7 +844,7 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
             opacity: 1;
           }
           100% {
-            transform: translate(calc(-50vw + 250px), calc(-50vh + 120px)) scale(0.05);
+            transform: translate(calc(50vw - 250px), calc(-50vh + 120px)) scale(0.05);
             opacity: 0;
           }
         }
@@ -1076,16 +1194,18 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
                       >
                         {isVerified ? (
                           question.score_awarded === question.marks_available ? (
-                            // Full marks - checkmark
-                            <CheckCircle className="w-5 h-5" fill="currentColor" />
+                            // Full marks - checkmark with enhanced visibility
+                            <svg width="20" height="20" viewBox="0 0 24 24" className="absolute" fill="none" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
                           ) : question.score_awarded === 0 ? (
                             // Zero marks - triangle (pointing down)
-                            <svg width="14" height="14" viewBox="0 0 12 12" className="absolute">
+                            <svg width="16" height="16" viewBox="0 0 12 12" className="absolute">
                               <polygon points="6,2 10,10 2,10" fill="currentColor" />
                             </svg>
                           ) : (
-                            // Partial marks - circle
-                            <svg width="10" height="10" viewBox="0 0 8 8" className="absolute">
+                            // Partial marks - circle with enhanced visibility
+                            <svg width="12" height="12" viewBox="0 0 8 8" className="absolute">
                               <circle cx="4" cy="4" r="3" fill="currentColor" />
                             </svg>
                           )
@@ -1106,7 +1226,9 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
                     : 'bg-white border-stone-300'
                 }`}>
                   {verifiedQuestionsCount === questions.length ? (
-                    <CheckCircle className="w-6 h-6 text-white" fill="currentColor" />
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-white">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
                   ) : (
                     <span className="text-stone-400 text-base font-bold">✓</span>
                   )}
@@ -1595,27 +1717,30 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
                               setHasUnsavedChanges(true);
                             }
 
-                            // Scroll to next unverified question
+                            // Navigate to next unverified question
                             setTimeout(() => {
                               const unverifiedQuestions = updatedQuestions.filter(q => !q.is_verified);
 
-                              if (unverifiedQuestions.length > 0) {
-                                const skippedQuestions = unverifiedQuestions.filter(q => q.question_number < activeQuestionNumber);
-
+                              if (unverifiedQuestions.length > 0 && activeQuestionNumber) {
                                 let nextQuestionNumber = null;
 
-                                if (skippedQuestions.length > 0) {
-                                  nextQuestionNumber = skippedQuestions[0].question_number;
+                                // Priority 1: Find next unverified question AFTER current one
+                                const nextQuestions = unverifiedQuestions.filter(q => q.question_number > activeQuestionNumber);
+                                if (nextQuestions.length > 0) {
+                                  nextQuestionNumber = nextQuestions[0].question_number;
                                 } else {
-                                  const nextQuestions = unverifiedQuestions.filter(q => q.question_number > activeQuestionNumber);
-                                  if (nextQuestions.length > 0) {
-                                    nextQuestionNumber = nextQuestions[0].question_number;
+                                  // Priority 2: All questions after current are verified, go back to skipped ones
+                                  const skippedQuestions = unverifiedQuestions.filter(q => q.question_number < activeQuestionNumber);
+                                  if (skippedQuestions.length > 0) {
+                                    nextQuestionNumber = skippedQuestions[0].question_number;
                                   } else {
+                                    // Fallback: Loop to first unverified
                                     nextQuestionNumber = unverifiedQuestions[0].question_number;
                                   }
                                 }
 
                                 if (nextQuestionNumber) {
+                                  setActiveQuestionNumber(nextQuestionNumber);
                                   const badgeElement = document.getElementById(`badge-q${nextQuestionNumber}`);
                                   if (badgeElement) {
                                     badgeElement.scrollIntoView({
@@ -2519,6 +2644,38 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
           </div>
         </>
       )}
+
+      {/* Keyboard Shortcuts Legend - Bottom Left */}
+      <div className="fixed bottom-28 left-8 z-[9998] p-3 transition-opacity duration-300 opacity-100">
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <kbd className="w-6 h-6 flex items-center justify-center bg-[#d5c4b8]/30 border border-[#d5c4b8]/50 rounded text-sm font-mono text-[#d5c4b8] shadow-sm">↑</kbd>
+            <span className="text-xs text-[#d5c4b8]/90">Prev Q</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <kbd className="w-6 h-6 flex items-center justify-center bg-[#d5c4b8]/30 border border-[#d5c4b8]/50 rounded text-sm font-mono text-[#d5c4b8] shadow-sm">↓</kbd>
+            <span className="text-xs text-[#d5c4b8]/90">Next Q</span>
+          </div>
+          <div className="w-full h-px bg-[#d5c4b8]/30 my-1"></div>
+          <div className="flex items-center gap-3">
+            <kbd className="w-6 h-6 flex items-center justify-center bg-[#d5c4b8]/30 border border-[#d5c4b8]/50 rounded text-sm font-mono text-[#d5c4b8] shadow-sm">←</kbd>
+            <span className="text-xs text-[#d5c4b8]/90">Prev Subm.</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <kbd className="w-6 h-6 flex items-center justify-center bg-[#d5c4b8]/30 border border-[#d5c4b8]/50 rounded text-sm font-mono text-[#d5c4b8] shadow-sm">→</kbd>
+            <span className="text-xs text-[#d5c4b8]/90">Next Subm.</span>
+          </div>
+          <div className="w-full h-px bg-[#d5c4b8]/30 my-1"></div>
+          <div className="flex items-center gap-3">
+            <kbd className="min-w-[24px] h-6 px-1.5 flex items-center justify-center bg-[#d5c4b8]/30 border border-[#d5c4b8]/50 rounded text-xs font-mono text-[#d5c4b8] shadow-sm">↵</kbd>
+            <span className="text-xs text-[#d5c4b8]/90">Verify & Next</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <kbd className="min-w-[24px] h-6 px-1.5 flex items-center justify-center bg-[#d5c4b8]/30 border border-[#d5c4b8]/50 rounded text-xs font-mono text-[#d5c4b8] shadow-sm">⌫</kbd>
+            <span className="text-xs text-[#d5c4b8]/90">0 & Next</span>
+          </div>
+        </div>
+      </div>
 
       {/* FAQ Button - Bottom Left */}
       <button
