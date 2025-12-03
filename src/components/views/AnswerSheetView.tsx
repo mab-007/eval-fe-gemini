@@ -1467,340 +1467,354 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
 
       {/* Floating Capsules Panel - Right Side - Always visible */}
       {activeQuestionNumber && (
-        <div className={`fixed right-2 sm:right-4 md:right-6 lg:right-8 top-2/3 w-[300px] sm:w-[350px] md:w-[380px] lg:w-[420px] z-[9998] space-y-3 transition-all duration-300 ${showCapsulesAnimation ? 'capsules-slide-in' : 'opacity-0'} ${showWelcomeModal || showPreferencesModal ? 'blur-sm' : ''}`}>
+        <>
           {(() => {
             const question = questions.find(q => q.question_number === activeQuestionNumber);
             if (!question) return null;
 
-            return (
-              <>
-                {/* Question Capsule */}
-                {question.question_text && (
-                  <div className="border border-stone-200 rounded-xl overflow-hidden bg-white shadow-2xl">
-                    <button
-                      onClick={() => setLocalQuestionOpen(!localQuestionOpen)}
-                      className="w-full px-4 py-3 flex items-center justify-between bg-gradient-to-r from-[#ebe3dd] to-[#e0d2c8] hover:from-[#e0d2c8] hover:to-[#d5c4b8] transition-colors"
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#d5c4b8] to-[#cbb8a8] flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">Q</span>
-                        </div>
-                        <span className="font-bold text-sm text-stone-900">Question {activeQuestionNumber}</span>
-                      </div>
-                      <svg
-                        className={`w-5 h-5 text-stone-600 transition-transform duration-300 ${localQuestionOpen ? 'rotate-90' : ''}`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
-                    <div
-                      className={`transition-all duration-300 ease-in-out ${localQuestionOpen ? 'max-h-96 overflow-y-auto' : 'max-h-0 overflow-hidden'
-                        }`}
-                    >
-                      <div className="p-4 bg-[#ebe3dd] animate-in slide-in-from-right duration-300">
-                        <p className="text-sm text-stone-600 leading-relaxed break-words overflow-wrap-anywhere">
-                          {question.question_text}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
+            // Calculate how many capsules are open
+            const openCount = (localQuestionOpen ? 1 : 0) + (localAIReasoningOpen ? 1 : 0) + (localScoringOpen ? 1 : 0);
+            const isMultiExpanded = openCount > 1;
 
-                {/* Reasoning Capsule */}
-                {question.feedback && (
-                  <div className="border border-stone-200 rounded-xl overflow-hidden bg-white shadow-2xl">
-                    <button
-                      onClick={() => setLocalAIReasoningOpen(!localAIReasoningOpen)}
-                      className="w-full px-4 py-3 flex items-center justify-between bg-gradient-to-r from-[#ebe3dd] to-[#e0d2c8] hover:from-[#e0d2c8] hover:to-[#d5c4b8] transition-colors"
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#c0a896] to-[#b59984] flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">R</span>
+            return (
+              <div className={`fixed right-2 sm:right-4 md:right-6 lg:right-8 top-2/3 z-[9998] transition-all duration-300 ${showCapsulesAnimation ? 'capsules-slide-in' : 'opacity-0'} ${showWelcomeModal || showPreferencesModal ? 'blur-sm' : ''} ${isMultiExpanded ? 'flex flex-row-reverse items-start gap-4' : 'flex flex-col gap-3'}`}>
+
+                {/* Capsules Panel */}
+                {/* In flex-row-reverse (multi), this is Right. In flex-col (single), this is Top. */}
+                <div className={`flex flex-col gap-3 w-[300px] sm:w-[350px] md:w-[380px] lg:w-[420px] p-1`}>
+                  {/* Question Capsule */}
+                  {question.question_text && (
+                    <div className="border border-stone-200 rounded-xl overflow-hidden bg-white shadow-2xl flex-shrink-0">
+                      <button
+                        onClick={() => setLocalQuestionOpen(!localQuestionOpen)}
+                        className="w-full px-4 py-3 flex items-center justify-between bg-gradient-to-r from-[#ebe3dd] to-[#e0d2c8] hover:from-[#e0d2c8] hover:to-[#d5c4b8] transition-colors"
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#d5c4b8] to-[#cbb8a8] flex items-center justify-center">
+                            <span className="text-white text-xs font-bold">Q</span>
+                          </div>
+                          <span className="font-bold text-sm text-stone-900">Question {activeQuestionNumber}</span>
                         </div>
-                        <span className="font-bold text-sm text-stone-900">Reasoning</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {!isEditingReasoning && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setIsEditingReasoning(true);
-                              setLocalAIReasoningOpen(true);
-                            }}
-                            className="p-1 hover:bg-[#d5c4b8] rounded transition-colors"
-                            title="Edit reasoning"
-                          >
-                            <Pencil className="w-4 h-4 text-stone-700" />
-                          </button>
-                        )}
                         <svg
-                          className={`w-5 h-5 text-stone-600 transition-transform duration-300 ${localAIReasoningOpen ? 'rotate-90' : ''}`}
+                          className={`w-5 h-5 text-stone-600 transition-transform duration-300 ${localQuestionOpen ? 'rotate-90' : ''}`}
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
                         >
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
-                      </div>
-                    </button>
-                    <div
-                      className={`transition-all duration-300 ease-in-out ${localAIReasoningOpen ? 'max-h-96 overflow-y-auto' : 'max-h-0 overflow-hidden'
-                        }`}
-                    >
-                      <div className="p-4 bg-[#ebe3dd] animate-in slide-in-from-right duration-300">
-                        <div
-                          contentEditable={isEditingReasoning}
-                          suppressContentEditableWarning
-                          onBlur={(e) => {
-                            if (isEditingReasoning) {
-                              const updatedQuestions = questions.map(q =>
-                                q.question_number === question.question_number
-                                  ? { ...q, feedback: e.currentTarget.textContent || '' }
-                                  : q
-                              );
-                              setQuestions(updatedQuestions);
-                              setIsEditingReasoning(false);
-                              if (isReviewMode) {
-                                setHasUnsavedChanges(true);
-                              }
-                            }
-                          }}
-                          onClick={() => {
-                            if (isEditingReasoning) {
-                              // Keep focus when editing
-                            }
-                          }}
-                          className={`text-sm text-stone-600 leading-relaxed break-words overflow-wrap-anywhere ${isEditingReasoning ? 'outline-none cursor-text' : ''
-                            }`}
-                        >
-                          {question.feedback}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Scoring Breakdown Capsule */}
-                {question.scoring_breakdown && question.scoring_breakdown.length > 0 && (
-                  <div className="border border-stone-200 rounded-xl overflow-hidden bg-white shadow-2xl">
-                    <button
-                      onClick={() => setLocalScoringOpen(!localScoringOpen)}
-                      className="w-full px-4 py-3 flex items-center justify-between bg-gradient-to-r from-[#ebe3dd] to-[#e0d2c8] hover:from-[#e0d2c8] hover:to-[#d5c4b8] transition-colors"
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#a89178] to-[#9d8066] flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">✓</span>
-                        </div>
-                        <span className="font-bold text-sm text-stone-900">Scoring Breakdown</span>
-                      </div>
-                      <svg
-                        className={`w-5 h-5 text-stone-600 transition-transform duration-300 ${localScoringOpen ? 'rotate-90' : ''}`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+                      </button>
+                      <div
+                        className={`transition-all duration-300 ease-in-out ${localQuestionOpen ? 'max-h-96 overflow-y-auto' : 'max-h-0 overflow-hidden'
+                          }`}
                       >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
-                    <div
-                      className={`transition-all duration-300 ease-in-out ${localScoringOpen ? 'max-h-[350px] overflow-y-auto' : 'max-h-0 overflow-hidden'
-                        }`}
-                    >
-                      <div className="p-4 bg-[#ebe3dd] animate-in slide-in-from-right duration-300 space-y-3">
-                        {question.scoring_breakdown.map((item, idx) => (
-                          <div key={idx} className={`border rounded-lg p-3 ${item.mark_awarded ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                            <p className="text-sm text-stone-600 leading-relaxed break-words overflow-wrap-anywhere">
-                              {item.reasoning}
-                            </p>
-                            <p className={`text-xs font-semibold mt-2 ${item.mark_awarded ? 'text-green-700' : 'text-red-700'}`}>
-                              {item.mark_awarded ? '✓ Mark Awarded' : '✗ Mark Not Awarded'}
-                            </p>
-                          </div>
-                        ))}
-
-                        {/* Mistakes Section within Scoring */}
-                        {question.mistakes_made && question.mistakes_made.length > 0 && (
-                          <div className="pt-3 border-t border-stone-200">
-                            <h5 className="text-xs font-bold text-red-700 mb-2">Mistakes Identified</h5>
-                            <div className="space-y-2">
-                              {question.mistakes_made.map((mistake, idx) => (
-                                <div key={idx} className="bg-red-50 border border-red-200 rounded-lg p-3">
-                                  <p className="text-xs font-bold text-red-700 mb-1 break-words">{mistake.mistake_type}</p>
-                                  <p className="text-sm text-stone-600 mb-2 break-words overflow-wrap-anywhere">{mistake.mistake_description}</p>
-                                  {mistake.lacking_competencies && mistake.lacking_competencies.length > 0 && (
-                                    <div className="mt-2">
-                                      <p className="text-xs font-semibold text-stone-700 mb-1">Lacking Competencies:</p>
-                                      <ul className="list-disc list-inside text-xs text-stone-600">
-                                        {mistake.lacking_competencies.map((comp, i) => (
-                                          <li key={i}>{comp}</li>
-                                        ))}
-                                      </ul>
-                                    </div>
-                                  )}
-                                  <p className="text-xs text-red-600 mt-2 font-semibold">
-                                    Marks Lost: {mistake.marks_lost}
-                                  </p>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
+                        <div className="p-4 bg-[#ebe3dd] animate-in slide-in-from-right duration-300">
+                          <p className="text-sm text-stone-600 leading-relaxed break-words overflow-wrap-anywhere">
+                            {question.question_text}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {/* Marks Suggestion - Horizontal scroll */}
-                <div className="w-full flex justify-center px-4">
-                  {/* Marks Suggestion - Horizontal scroll */}
-                  <div className="flex items-center gap-1">
-                    {/* Scroll Indicator - Left */}
-                    <div className="flex-shrink-0 text-[#8c735a] px-1">
-                      <div className="animate-pulse">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15 19l-7-7 7-7" />
+                  {/* Reasoning Capsule */}
+                  {question.feedback && (
+                    <div className="border border-stone-200 rounded-xl overflow-hidden bg-white shadow-2xl flex-shrink-0">
+                      <button
+                        onClick={() => setLocalAIReasoningOpen(!localAIReasoningOpen)}
+                        className="w-full px-4 py-3 flex items-center justify-between bg-gradient-to-r from-[#ebe3dd] to-[#e0d2c8] hover:from-[#e0d2c8] hover:to-[#d5c4b8] transition-colors"
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#c0a896] to-[#b59984] flex items-center justify-center">
+                            <span className="text-white text-xs font-bold">R</span>
+                          </div>
+                          <span className="font-bold text-sm text-stone-900">Reasoning</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {!isEditingReasoning && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setIsEditingReasoning(true);
+                                setLocalAIReasoningOpen(true);
+                              }}
+                              className="p-1 hover:bg-[#d5c4b8] rounded transition-colors"
+                              title="Edit reasoning"
+                            >
+                              <Pencil className="w-4 h-4 text-stone-700" />
+                            </button>
+                          )}
+                          <svg
+                            className={`w-5 h-5 text-stone-600 transition-transform duration-300 ${localAIReasoningOpen ? 'rotate-90' : ''}`}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </div>
+                      </button>
+                      <div
+                        className={`transition-all duration-300 ease-in-out ${localAIReasoningOpen ? 'max-h-96 overflow-y-auto' : 'max-h-0 overflow-hidden'
+                          }`}
+                      >
+                        <div className="p-4 bg-[#ebe3dd] animate-in slide-in-from-right duration-300">
+                          <div
+                            contentEditable={isEditingReasoning}
+                            suppressContentEditableWarning
+                            onBlur={(e) => {
+                              if (isEditingReasoning) {
+                                const updatedQuestions = questions.map(q =>
+                                  q.question_number === question.question_number
+                                    ? { ...q, feedback: e.currentTarget.textContent || '' }
+                                    : q
+                                );
+                                setQuestions(updatedQuestions);
+                                setIsEditingReasoning(false);
+                                if (isReviewMode) {
+                                  setHasUnsavedChanges(true);
+                                }
+                              }
+                            }}
+                            onClick={() => {
+                              if (isEditingReasoning) {
+                                // Keep focus when editing
+                              }
+                            }}
+                            className={`text-sm text-stone-600 leading-relaxed break-words overflow-wrap-anywhere ${isEditingReasoning ? 'outline-none cursor-text' : ''
+                              }`}
+                          >
+                            {question.feedback}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Scoring Breakdown Capsule */}
+                  {question.scoring_breakdown && question.scoring_breakdown.length > 0 && (
+                    <div className="border border-stone-200 rounded-xl overflow-hidden bg-white shadow-2xl flex-shrink-0">
+                      <button
+                        onClick={() => setLocalScoringOpen(!localScoringOpen)}
+                        className="w-full px-4 py-3 flex items-center justify-between bg-gradient-to-r from-[#ebe3dd] to-[#e0d2c8] hover:from-[#e0d2c8] hover:to-[#d5c4b8] transition-colors"
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#a89178] to-[#9d8066] flex items-center justify-center">
+                            <span className="text-white text-xs font-bold">✓</span>
+                          </div>
+                          <span className="font-bold text-sm text-stone-900">Scoring Breakdown</span>
+                        </div>
+                        <svg
+                          className={`w-5 h-5 text-stone-600 transition-transform duration-300 ${localScoringOpen ? 'rotate-90' : ''}`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
+                      </button>
+                      <div
+                        className={`transition-all duration-300 ease-in-out ${localScoringOpen ? 'max-h-[350px] overflow-y-auto' : 'max-h-0 overflow-hidden'
+                          }`}
+                      >
+                        <div className="p-4 bg-[#ebe3dd] animate-in slide-in-from-right duration-300 space-y-3">
+                          {question.scoring_breakdown.map((item, idx) => (
+                            <div key={idx} className={`border rounded-lg p-3 ${item.mark_awarded ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                              <p className="text-sm text-stone-600 leading-relaxed break-words overflow-wrap-anywhere">
+                                {item.reasoning}
+                              </p>
+                              <p className={`text-xs font-semibold mt-2 ${item.mark_awarded ? 'text-green-700' : 'text-red-700'}`}>
+                                {item.mark_awarded ? '✓ Mark Awarded' : '✗ Mark Not Awarded'}
+                              </p>
+                            </div>
+                          ))}
+
+                          {/* Mistakes Section within Scoring */}
+                          {question.mistakes_made && question.mistakes_made.length > 0 && (
+                            <div className="pt-3 border-t border-stone-200">
+                              <h5 className="text-xs font-bold text-red-700 mb-2">Mistakes Identified</h5>
+                              <div className="space-y-2">
+                                {question.mistakes_made.map((mistake, idx) => (
+                                  <div key={idx} className="bg-red-50 border border-red-200 rounded-lg p-3">
+                                    <p className="text-xs font-bold text-red-700 mb-1 break-words">{mistake.mistake_type}</p>
+                                    <p className="text-sm text-stone-600 mb-2 break-words overflow-wrap-anywhere">{mistake.mistake_description}</p>
+                                    {mistake.lacking_competencies && mistake.lacking_competencies.length > 0 && (
+                                      <div className="mt-2">
+                                        <p className="text-xs font-semibold text-stone-700 mb-1">Lacking Competencies:</p>
+                                        <ul className="list-disc list-inside text-xs text-stone-600">
+                                          {mistake.lacking_competencies.map((comp, i) => (
+                                            <li key={i}>{comp}</li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    )}
+                                    <p className="text-xs text-red-600 mt-2 font-semibold">
+                                      Marks Lost: {mistake.marks_lost}
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Actions Panel (Marks Suggestion & Verify Icons) */}
+                {/* In flex-row-reverse (multi), this is Left. In flex-col (single), this is Bottom. */}
+                <div className={`flex-shrink-0 transition-all duration-300 ${isMultiExpanded ? 'mb-0' : 'pt-2'}`}>
+                  <div className="space-y-3">
+                    {/* Marks Suggestion - Horizontal scroll */}
+                    <div className="w-full flex justify-center px-4">
+                      <div className="flex items-center gap-1">
+                        {/* Scroll Indicator - Left */}
+                        <div className="flex-shrink-0 text-[#8c735a] px-1">
+                          <div className="animate-pulse">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15 19l-7-7 7-7" />
+                            </svg>
+                          </div>
+                        </div>
+
+                        <div
+                          className="flex gap-3 overflow-x-auto pb-2 scrollbar-hidden"
+                          style={{
+                            maxWidth: '220px',
+                            scrollSnapType: 'x mandatory'
+                          }}
+                        >
+                          {generateMarkSuggestions(question.marks_available, question.score_awarded).map((mark) => (
+                            <button
+                              key={mark}
+                              onClick={() => {
+                                const updatedQuestions = questions.map(q =>
+                                  q.question_number === activeQuestionNumber
+                                    ? { ...q, score_awarded: mark }
+                                    : q
+                                );
+                                setQuestions(updatedQuestions);
+                                if (isReviewMode) {
+                                  setHasUnsavedChanges(true);
+                                }
+                              }}
+                              className="flex-shrink-0 bg-gradient-to-br from-[#ebe3dd] to-[#e0d2c8] hover:from-[#e0d2c8] hover:to-[#d5c4b8] border-2 border-[#cbb8a8] hover:border-[#b59984] rounded-full font-bold text-stone-700 hover:text-stone-900 transition-all duration-200 shadow-md hover:shadow-lg text-base flex items-center justify-center"
+                              style={{
+                                width: '50px',
+                                height: '50px',
+                                scrollSnapAlign: 'start'
+                              }}
+                            >
+                              {mark}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Scroll Indicator - Right */}
+                        <div className="flex-shrink-0 text-[#8c735a] px-1">
+                          <div className="animate-pulse">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
-                    <div
-                      className="flex gap-3 overflow-x-auto pb-2 scrollbar-hidden"
-                      style={{
-                        maxWidth: '220px',
-                        scrollSnapType: 'x mandatory'
-                      }}
-                    >
-                      {generateMarkSuggestions(question.marks_available, question.score_awarded).map((mark) => (
+                    {/* Verify Icons - Below Marks Options */}
+                    <div className="w-full mt-4 flex justify-center gap-6">
+                      <div className="group relative flex flex-col items-center">
                         <button
-                          key={mark}
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleVerifyQuestion(e, activeQuestionNumber);
+                          }}
+                          className="transition-all duration-200 flex items-center justify-center"
+                        >
+                          <CheckCircle
+                            className={`w-8 h-8 transition-all duration-200 ${question.is_verified
+                              ? 'text-green-500 scale-125'
+                              : 'text-gray-400 hover:text-green-500 hover:scale-110'
+                              }`}
+                            fill={question.is_verified ? "currentColor" : "none"}
+                          />
+                        </button>
+                        <span className="absolute -bottom-6 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-xs font-medium text-stone-700 whitespace-nowrap bg-white px-2 py-1 rounded shadow-md">
+                          Mark as Verified
+                        </span>
+                      </div>
+
+                      <div className="group relative flex flex-col items-center">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Set marks to 0 and verify the question
                             const updatedQuestions = questions.map(q =>
                               q.question_number === activeQuestionNumber
-                                ? { ...q, score_awarded: mark }
+                                ? { ...q, score_awarded: 0, is_verified: true }
                                 : q
                             );
                             setQuestions(updatedQuestions);
+
+                            // Mark as having unsaved changes if in review mode
                             if (isReviewMode) {
                               setHasUnsavedChanges(true);
                             }
-                          }}
-                          className="flex-shrink-0 bg-gradient-to-br from-[#ebe3dd] to-[#e0d2c8] hover:from-[#e0d2c8] hover:to-[#d5c4b8] border-2 border-[#cbb8a8] hover:border-[#b59984] rounded-full font-bold text-stone-700 hover:text-stone-900 transition-all duration-200 shadow-md hover:shadow-lg text-base flex items-center justify-center"
-                          style={{
-                            width: '50px',
-                            height: '50px',
-                            scrollSnapAlign: 'start'
-                          }}
-                        >
-                          {mark}
-                        </button>
-                      ))}
-                    </div>
 
-                    {/* Scroll Indicator - Right */}
-                    <div className="flex-shrink-0 text-[#8c735a] px-1">
-                      <div className="animate-pulse">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" />
-                        </svg>
+                            // Navigate to next unverified question
+                            setTimeout(() => {
+                              const unverifiedQuestions = updatedQuestions.filter(q => !q.is_verified);
+
+                              if (unverifiedQuestions.length > 0 && activeQuestionNumber) {
+                                let nextQuestionNumber = null;
+
+                                // Priority 1: Find next unverified question AFTER current one
+                                const nextQuestions = unverifiedQuestions.filter(q => q.question_number > activeQuestionNumber);
+                                if (nextQuestions.length > 0) {
+                                  nextQuestionNumber = nextQuestions[0].question_number;
+                                } else {
+                                  // Priority 2: All questions after current are verified, go back to skipped ones
+                                  const skippedQuestions = unverifiedQuestions.filter(q => q.question_number < activeQuestionNumber);
+                                  if (skippedQuestions.length > 0) {
+                                    nextQuestionNumber = skippedQuestions[0].question_number;
+                                  } else {
+                                    // Fallback: Loop to first unverified
+                                    nextQuestionNumber = unverifiedQuestions[0].question_number;
+                                  }
+                                }
+
+                                if (nextQuestionNumber) {
+                                  setActiveQuestionNumber(nextQuestionNumber);
+                                  const badgeElement = document.getElementById(`badge-q${nextQuestionNumber}`);
+                                  if (badgeElement) {
+                                    badgeElement.scrollIntoView({
+                                      behavior: 'smooth',
+                                      block: 'center',
+                                      inline: 'center'
+                                    });
+                                  }
+                                }
+                              }
+                            }, 300);
+                          }}
+                          className="transition-all duration-200 flex items-center justify-center"
+                        >
+                          <X
+                            className="w-8 h-8 transition-all duration-200 text-red-500 hover:text-red-700 hover:scale-110"
+                          />
+                        </button>
+                        <span className="absolute -bottom-6 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-xs font-medium text-stone-700 whitespace-nowrap bg-white px-2 py-1 rounded shadow-md">
+                          Mark as Zero
+                        </span>
                       </div>
                     </div>
                   </div>
                 </div>
-
-                {/* Verify Icons - Below Marks Options */}
-                <div className="w-full mt-4 flex justify-center gap-6">
-                  <div className="group relative flex flex-col items-center">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleVerifyQuestion(e, activeQuestionNumber);
-                      }}
-                      className="transition-all duration-200 flex items-center justify-center"
-                    >
-                      <CheckCircle
-                        className={`w-8 h-8 transition-all duration-200 ${question.is_verified
-                          ? 'text-green-500 scale-125'
-                          : 'text-gray-400 hover:text-green-500 hover:scale-110'
-                          }`}
-                        fill={question.is_verified ? "currentColor" : "none"}
-                      />
-                    </button>
-                    <span className="absolute -bottom-6 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-xs font-medium text-stone-700 whitespace-nowrap bg-white px-2 py-1 rounded shadow-md">
-                      Mark as Verified
-                    </span>
-                  </div>
-
-                  <div className="group relative flex flex-col items-center">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // Set marks to 0 and verify the question
-                        const updatedQuestions = questions.map(q =>
-                          q.question_number === activeQuestionNumber
-                            ? { ...q, score_awarded: 0, is_verified: true }
-                            : q
-                        );
-                        setQuestions(updatedQuestions);
-
-                        // Mark as having unsaved changes if in review mode
-                        if (isReviewMode) {
-                          setHasUnsavedChanges(true);
-                        }
-
-                        // Navigate to next unverified question
-                        setTimeout(() => {
-                          const unverifiedQuestions = updatedQuestions.filter(q => !q.is_verified);
-
-                          if (unverifiedQuestions.length > 0 && activeQuestionNumber) {
-                            let nextQuestionNumber = null;
-
-                            // Priority 1: Find next unverified question AFTER current one
-                            const nextQuestions = unverifiedQuestions.filter(q => q.question_number > activeQuestionNumber);
-                            if (nextQuestions.length > 0) {
-                              nextQuestionNumber = nextQuestions[0].question_number;
-                            } else {
-                              // Priority 2: All questions after current are verified, go back to skipped ones
-                              const skippedQuestions = unverifiedQuestions.filter(q => q.question_number < activeQuestionNumber);
-                              if (skippedQuestions.length > 0) {
-                                nextQuestionNumber = skippedQuestions[0].question_number;
-                              } else {
-                                // Fallback: Loop to first unverified
-                                nextQuestionNumber = unverifiedQuestions[0].question_number;
-                              }
-                            }
-
-                            if (nextQuestionNumber) {
-                              setActiveQuestionNumber(nextQuestionNumber);
-                              const badgeElement = document.getElementById(`badge-q${nextQuestionNumber}`);
-                              if (badgeElement) {
-                                badgeElement.scrollIntoView({
-                                  behavior: 'smooth',
-                                  block: 'center',
-                                  inline: 'center'
-                                });
-                              }
-                            }
-                          }
-                        }, 300);
-                      }}
-                      className="transition-all duration-200 flex items-center justify-center"
-                    >
-                      <X
-                        className="w-8 h-8 transition-all duration-200 text-red-500 hover:text-red-700 hover:scale-110"
-                      />
-                    </button>
-                    <span className="absolute -bottom-6 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-xs font-medium text-stone-700 whitespace-nowrap bg-white px-2 py-1 rounded shadow-md">
-                      Mark as Zero
-                    </span>
-                  </div>
-                </div>
-              </>
+              </div>
             );
           })()}
-        </div>
+        </>
       )}
 
       {/* Running Total - Fixed Center Right (Outside main container) */}
