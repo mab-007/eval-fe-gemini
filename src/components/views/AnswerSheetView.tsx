@@ -113,10 +113,22 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
   const [showPreferencesModal, setShowPreferencesModal] = useState(false);
   const [isMinimizing, setIsMinimizing] = useState(false);
 
-  // User preferences for panel expansion (not visibility - all panels are always visible)
+  // User preferences for panel expansion (global defaults)
   const [keepQuestionOpen, setKeepQuestionOpen] = useState(false);
   const [keepAIReasoningOpen, setKeepAIReasoningOpen] = useState(false);
   const [keepScoringOpen, setKeepScoringOpen] = useState(false);
+
+  // Local state for capsule expansion (per question instance)
+  const [localQuestionOpen, setLocalQuestionOpen] = useState(false);
+  const [localAIReasoningOpen, setLocalAIReasoningOpen] = useState(false);
+  const [localScoringOpen, setLocalScoringOpen] = useState(false);
+
+  // Sync local state with global preferences when question changes or preferences change
+  useEffect(() => {
+    setLocalQuestionOpen(keepQuestionOpen);
+    setLocalAIReasoningOpen(keepAIReasoningOpen);
+    setLocalScoringOpen(keepScoringOpen);
+  }, [activeQuestionNumber, keepQuestionOpen, keepAIReasoningOpen, keepScoringOpen]);
 
   // Track reasoning editing state
   const [isEditingReasoning, setIsEditingReasoning] = useState(false);
@@ -1209,26 +1221,7 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
                         `}
                         title={`Jump to Question ${question.question_number}`}
                       >
-                        {isVerified ? (
-                          question.score_awarded === question.marks_available ? (
-                            // Full marks - checkmark with enhanced visibility
-                            <svg className="w-4 h-4 sm:w-5 sm:h-5 absolute" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                            </svg>
-                          ) : question.score_awarded === 0 ? (
-                            // Zero marks - triangle (pointing down)
-                            <svg className="w-3 h-3 sm:w-4 sm:h-4 absolute" viewBox="0 0 12 12">
-                              <polygon points="6,2 10,10 2,10" fill="currentColor" />
-                            </svg>
-                          ) : (
-                            // Partial marks - circle with enhanced visibility
-                            <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 absolute" viewBox="0 0 8 8">
-                              <circle cx="4" cy="4" r="3" fill="currentColor" />
-                            </svg>
-                          )
-                        ) : (
-                          <span>{question.question_number}</span>
-                        )}
+                        <span>{question.question_number}</span>
                       </button>
                     );
                   })}
@@ -1485,7 +1478,7 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
                 {question.question_text && (
                   <div className="border border-stone-200 rounded-xl overflow-hidden bg-white shadow-2xl">
                     <button
-                      onClick={() => setKeepQuestionOpen(!keepQuestionOpen)}
+                      onClick={() => setLocalQuestionOpen(!localQuestionOpen)}
                       className="w-full px-4 py-3 flex items-center justify-between bg-gradient-to-r from-[#ebe3dd] to-[#e0d2c8] hover:from-[#e0d2c8] hover:to-[#d5c4b8] transition-colors"
                     >
                       <div className="flex items-center gap-2">
@@ -1495,7 +1488,7 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
                         <span className="font-bold text-sm text-stone-900">Question {activeQuestionNumber}</span>
                       </div>
                       <svg
-                        className={`w-5 h-5 text-stone-600 transition-transform duration-300 ${keepQuestionOpen ? 'rotate-90' : ''}`}
+                        className={`w-5 h-5 text-stone-600 transition-transform duration-300 ${localQuestionOpen ? 'rotate-90' : ''}`}
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -1504,7 +1497,7 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
                       </svg>
                     </button>
                     <div
-                      className={`transition-all duration-300 ease-in-out ${keepQuestionOpen ? 'max-h-96 overflow-y-auto' : 'max-h-0 overflow-hidden'
+                      className={`transition-all duration-300 ease-in-out ${localQuestionOpen ? 'max-h-96 overflow-y-auto' : 'max-h-0 overflow-hidden'
                         }`}
                     >
                       <div className="p-4 bg-[#ebe3dd] animate-in slide-in-from-right duration-300">
@@ -1520,7 +1513,7 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
                 {question.feedback && (
                   <div className="border border-stone-200 rounded-xl overflow-hidden bg-white shadow-2xl">
                     <button
-                      onClick={() => setKeepAIReasoningOpen(!keepAIReasoningOpen)}
+                      onClick={() => setLocalAIReasoningOpen(!localAIReasoningOpen)}
                       className="w-full px-4 py-3 flex items-center justify-between bg-gradient-to-r from-[#ebe3dd] to-[#e0d2c8] hover:from-[#e0d2c8] hover:to-[#d5c4b8] transition-colors"
                     >
                       <div className="flex items-center gap-2">
@@ -1535,7 +1528,7 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
                             onClick={(e) => {
                               e.stopPropagation();
                               setIsEditingReasoning(true);
-                              setKeepAIReasoningOpen(true);
+                              setLocalAIReasoningOpen(true);
                             }}
                             className="p-1 hover:bg-[#d5c4b8] rounded transition-colors"
                             title="Edit reasoning"
@@ -1544,7 +1537,7 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
                           </button>
                         )}
                         <svg
-                          className={`w-5 h-5 text-stone-600 transition-transform duration-300 ${keepAIReasoningOpen ? 'rotate-90' : ''}`}
+                          className={`w-5 h-5 text-stone-600 transition-transform duration-300 ${localAIReasoningOpen ? 'rotate-90' : ''}`}
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -1554,7 +1547,7 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
                       </div>
                     </button>
                     <div
-                      className={`transition-all duration-300 ease-in-out ${keepAIReasoningOpen ? 'max-h-96 overflow-y-auto' : 'max-h-0 overflow-hidden'
+                      className={`transition-all duration-300 ease-in-out ${localAIReasoningOpen ? 'max-h-96 overflow-y-auto' : 'max-h-0 overflow-hidden'
                         }`}
                     >
                       <div className="p-4 bg-[#ebe3dd] animate-in slide-in-from-right duration-300">
@@ -1594,7 +1587,7 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
                 {question.scoring_breakdown && question.scoring_breakdown.length > 0 && (
                   <div className="border border-stone-200 rounded-xl overflow-hidden bg-white shadow-2xl">
                     <button
-                      onClick={() => setKeepScoringOpen(!keepScoringOpen)}
+                      onClick={() => setLocalScoringOpen(!localScoringOpen)}
                       className="w-full px-4 py-3 flex items-center justify-between bg-gradient-to-r from-[#ebe3dd] to-[#e0d2c8] hover:from-[#e0d2c8] hover:to-[#d5c4b8] transition-colors"
                     >
                       <div className="flex items-center gap-2">
@@ -1604,7 +1597,7 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
                         <span className="font-bold text-sm text-stone-900">Scoring Breakdown</span>
                       </div>
                       <svg
-                        className={`w-5 h-5 text-stone-600 transition-transform duration-300 ${keepScoringOpen ? 'rotate-90' : ''}`}
+                        className={`w-5 h-5 text-stone-600 transition-transform duration-300 ${localScoringOpen ? 'rotate-90' : ''}`}
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -1613,7 +1606,7 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
                       </svg>
                     </button>
                     <div
-                      className={`transition-all duration-300 ease-in-out ${keepScoringOpen ? 'max-h-[350px] overflow-y-auto' : 'max-h-0 overflow-hidden'
+                      className={`transition-all duration-300 ease-in-out ${localScoringOpen ? 'max-h-[350px] overflow-y-auto' : 'max-h-0 overflow-hidden'
                         }`}
                     >
                       <div className="p-4 bg-[#ebe3dd] animate-in slide-in-from-right duration-300 space-y-3">

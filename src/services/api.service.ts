@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://13.232.248.209:3001/api';
+const API_BASE_URL = 'http://13.232.188.124:3001/api';
 
 export interface SubmissionData {
   id: number;
@@ -84,6 +84,8 @@ export const apiService = {
     description?: string;
   }): Promise<SubmissionData> {
     try {
+      console.log('Verifying submission:', verificationData);
+      console.log('Submission ID:', id);
       const response = await fetch(`${API_BASE_URL}/submissions/${id}/verify`, {
         method: 'POST',
         headers: {
