@@ -163,7 +163,7 @@ const EvaluationsView: React.FC<EvaluationsViewProps> = ({
             />
             <StatCard
               title="Average Score"
-              value={`${Math.round(submissions.reduce((acc, s) => acc + (s.total_marks > 0 ? (s.score_awarded / s.total_marks) * 100 : 0), 0) / (submissions.length || 1))}%`}
+              value={`${Math.round(submissions.reduce((acc, s) => acc + (s.total_marks > 0 ? ((s.score_awarded || 0) / s.total_marks) * 100 : 0), 0) / (submissions.length || 1))}%`}
               icon={<BrainCircuit className="text-[#AB896A]" />}
             />
             <StatCard

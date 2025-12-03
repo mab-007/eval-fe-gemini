@@ -73,7 +73,6 @@ app.post('/api/submissions/:id/verify', async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const { questions, status, score_awarded, total_marks, description } = req.body;
-
     // Find the existing submission
     const existingSubmission = await Submission.findOne({ id });
 
@@ -93,7 +92,7 @@ app.post('/api/submissions/:id/verify', async (req, res) => {
       roll: existingSubmission.roll,
       download_url: existingSubmission.download_url,
       description: existingSubmission.description,
-      score_awarded: existingSubmission.score_awarded,
+      score_awarded: existingSubmission?.score_awarded || 0,
       total_marks: existingSubmission.total_marks,
       questions: existingSubmission.questions,
       archived_reason: 'Verification completed'
