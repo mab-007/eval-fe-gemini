@@ -1350,8 +1350,8 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
                                 </span>
                               )}
                             </button>
-                            <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-sm px-2.5 py-0.5 z-10 rounded border border-stone-200 shadow-sm whitespace-nowrap">
-                              <span className="text-[10px] font-bold text-stone-700">Q{question.question_number}</span>
+                            <div className={`absolute left-full ml-2 top-1/2 -translate-y-1/2 backdrop-blur-sm px-2.5 py-0.5 z-10 rounded border shadow-sm whitespace-nowrap transition-colors duration-200 ${question.question_number === activeQuestionNumber ? 'bg-stone-800 border-stone-800' : 'bg-white/80 border-stone-200'}`}>
+                              <span className={`text-[10px] font-bold ${question.question_number === activeQuestionNumber ? 'text-white' : 'text-stone-700'}`}>Q{question.question_number}</span>
                             </div>
                           </div>
                         </div>
@@ -1403,8 +1403,8 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
                                 </span>
                               )}
                             </button>
-                            <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-sm px-2.5 py-0.5 z-10 rounded border border-stone-200 shadow-sm whitespace-nowrap">
-                              <span className="text-[10px] font-bold text-stone-700">Q{question.question_number}</span>
+                            <div className={`absolute left-full ml-2 top-1/2 -translate-y-1/2 backdrop-blur-sm px-2.5 py-0.5 z-10 rounded border shadow-sm whitespace-nowrap transition-colors duration-200 ${question.question_number === activeQuestionNumber ? 'bg-stone-800 border-stone-800' : 'bg-white/80 border-stone-200'}`}>
+                              <span className={`text-[10px] font-bold ${question.question_number === activeQuestionNumber ? 'text-white' : 'text-stone-700'}`}>Q{question.question_number}</span>
                             </div>
                           </div>
                         </div>
@@ -1449,8 +1449,8 @@ const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
                                 </span>
                               )}
                             </button>
-                            <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-sm px-2.5 py-0.5 z-10 rounded border border-stone-200 shadow-sm whitespace-nowrap">
-                              <span className="text-[10px] font-bold text-stone-700">Q{question.question_number}</span>
+                            <div className={`absolute left-full ml-2 top-1/2 -translate-y-1/2 backdrop-blur-sm px-2.5 py-0.5 z-10 rounded border shadow-sm whitespace-nowrap transition-colors duration-200 ${question.question_number === activeQuestionNumber ? 'bg-stone-800 border-stone-800' : 'bg-white/80 border-stone-200'}`}>
+                              <span className={`text-[10px] font-bold ${question.question_number === activeQuestionNumber ? 'text-white' : 'text-stone-700'}`}>Q{question.question_number}</span>
                             </div>
                           </div>
                         </div>
